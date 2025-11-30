@@ -1,17 +1,17 @@
 import {
-  Typography,
   Box,
-  Container,
   Card,
-  CardMedia,
   CardContent,
+  CardMedia,
+  Container,
   Grid,
+  Typography,
 } from "@mui/material";
 
-import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import AlbumIcon from "@mui/icons-material/Album";
-import StyleIcon from "@mui/icons-material/Style";
 import DirectionsRunIcon from "@mui/icons-material/DirectionsRun";
+import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
+import StyleIcon from "@mui/icons-material/Style";
 import { useState } from "react";
 import AppNavbar from "../components/AppNavBar";
 import AnimatedButton from "../components/Button";
