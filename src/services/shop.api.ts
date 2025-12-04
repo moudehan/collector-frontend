@@ -1,0 +1,37 @@
+import { API_URL } from "../config";
+import type { Shop } from "../types/shop.type";
+
+export async function getMyShops(): Promise<Shop[]> {
+  const token = localStorage.getItem("UserToken");
+
+  const res = await fetch(`${API_URL}/shops/my`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Impossible de charger vos boutiques");
+  }
+
+  return res.json();
+}
+
+export async function createShop(body: { name: string; description: string }) {
+  const token = localStorage.getItem("UserToken");
+
+  const res = await fetch(`${API_URL}/shops`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    throw new Error("Erreur lors de la création de la boutique");
+  }
+
+  return res.json();
+}
