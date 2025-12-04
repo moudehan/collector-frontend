@@ -13,7 +13,6 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-
 import { useState } from "react";
 import UserMenuDrawer from "../layout/UserMenuDrawer";
 import AuthModal from "../pages/AuthModal";
@@ -48,7 +47,6 @@ export default function AppNavbar() {
             px: 2,
           }}
         >
-          {/* LOGO */}
           <Typography
             variant="h5"
             fontWeight={1000}
@@ -57,7 +55,6 @@ export default function AppNavbar() {
             COLLECTOR<span style={{ color: "#000" }}>.shop</span>
           </Typography>
 
-          {/* SEARCH BAR */}
           <Box sx={{ flexGrow: 0.6 }}>
             <TextField
               fullWidth
@@ -82,12 +79,10 @@ export default function AppNavbar() {
             />
           </Box>
 
-          {/* RIGHT SECTION */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <FavoriteBorderIcon sx={{ color: "#1e4fff", fontSize: 30 }} />
             <LanguageIcon sx={{ color: "#1e4fff", fontSize: 30 }} />
 
-            {/* Avatar (non clickable) */}
             {token && (
               <>
                 <Avatar sx={{ bgcolor: "#1e4fff", width: 45, height: 45 }}>
@@ -130,7 +125,6 @@ export default function AppNavbar() {
         mode={authMode}
         setMode={setAuthMode}
       />
-      {/* Drawer externe */}
       <UserMenuDrawer
         open={openDrawer}
         onClose={toggleDrawer}
