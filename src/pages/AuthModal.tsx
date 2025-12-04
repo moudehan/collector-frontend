@@ -1,21 +1,24 @@
 import {
+  Box,
   Dialog,
   DialogContent,
   DialogTitle,
-  IconButton,
-  TextField,
   Divider,
-  Box,
-  Typography,
+  IconButton,
   Link,
+  TextField,
+  Typography,
 } from "@mui/material";
 
 import CloseIcon from "@mui/icons-material/Close";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import GoogleIcon from "@mui/icons-material/Google";
 
+import { enqueueSnackbar } from "notistack";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AnimatedButton from "../components/Button";
-import { useState, useEffect } from "react";
+import { login, registerUser } from "../services/auth.api";
 
 interface Props {
   open: boolean;
@@ -32,6 +35,17 @@ export default function AuthModal({
 }: Props) {
   const [internalMode, setInternalMode] = useState<"login" | "register">(mode);
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [firstname, setFirstname] = useState("");
+  const [lastname, setLastname] = useState("");
+
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+
   useEffect(() => {
     setInternalMode(mode);
   }, [mode]);
@@ -40,7 +54,82 @@ export default function AuthModal({
     const m = internalMode === "login" ? "register" : "login";
     setInternalMode(m);
     setMode?.(m);
+    setError("");
   };
+  const isValidEmail = (value: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  };
+
+  const isValidPassword = (value: string) => {
+    return value.length >= 8;
+  };
+
+  async function handleLogin() {
+    setError("");
+
+    if (!email || !password) {
+      setError("Veuillez remplir tous les champs.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Adresse email ou mot de passe incorrect.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const data = await login(email, password);
+      localStorage.setItem("UserToken", data.access_token);
+
+      onClose();
+      navigate("/");
+    } catch {
+      setError("Email ou mot de passe incorrect.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRegister() {
+    setError("");
+
+    if (!firstname || !lastname || !email || !password) {
+      setError("Veuillez remplir tous les champs.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Format d'email invalide.");
+      return;
+    }
+
+    if (!isValidPassword(password)) {
+      setError("Le mot de passe doit contenir au minimum 8 caractères.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const data = await registerUser(firstname, lastname, email, password);
+
+      if (data) {
+        enqueueSnackbar("Votre compte a bien été créé !", {
+          variant: "success",
+        });
+      }
+
+      onClose();
+      navigate("/");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      setError(err.message || "Erreur lors de la création du compte.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -56,11 +145,7 @@ export default function AuthModal({
           {internalMode === "login" ? "Se connecter" : "Créer un compte"}
         </DialogTitle>
 
-        <IconButton
-          size="small"
-          sx={{ "&:focus": { outline: "none" } }}
-          onClick={onClose}
-        >
+        <IconButton size="small" onClick={onClose}>
           <CloseIcon />
         </IconButton>
       </Box>
@@ -87,21 +172,11 @@ export default function AuthModal({
         </Typography>
 
         <Box display="flex" gap={1.2}>
-          <AnimatedButton
-            width="100%"
-            height={55}
-            color="#1877F2"
-            sx={{ borderRadius: "4px" }}
-          >
+          <AnimatedButton width="100%" height={55} color="#1877F2">
             <FacebookIcon /> <Typography ml={1}>Facebook</Typography>
           </AnimatedButton>
 
-          <AnimatedButton
-            width="100%"
-            height={55}
-            variant="outlined"
-            sx={{ borderRadius: "4px" }}
-          >
+          <AnimatedButton width="100%" height={55} variant="outlined">
             <GoogleIcon /> <Typography ml={1}>Google</Typography>
           </AnimatedButton>
         </Box>
@@ -119,14 +194,14 @@ export default function AuthModal({
             <TextField
               label="Prénom"
               fullWidth
-              placeholder="Jean"
-              InputLabelProps={{ style: { color: "gray" } }}
+              value={firstname}
+              onChange={(e) => setFirstname(e.target.value)}
             />
             <TextField
               label="Nom"
               fullWidth
-              placeholder="Dupont"
-              InputLabelProps={{ style: { color: "gray" } }}
+              value={lastname}
+              onChange={(e) => setLastname(e.target.value)}
             />
           </Box>
         )}
@@ -134,36 +209,51 @@ export default function AuthModal({
         <TextField
           fullWidth
           label="Adresse email"
-          placeholder="email@email.com"
           sx={{ mb: 2 }}
-          InputLabelProps={{ style: { color: "gray" } }}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
 
         <TextField
           fullWidth
           type="password"
           label="Mot de passe"
-          placeholder="Min. 8 caractères"
-          InputLabelProps={{ style: { color: "gray" } }}
+          sx={{ mb: 1 }}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
 
-        {internalMode === "register" && (
-          <Typography fontSize={11} color="gray" mt={1.5}>
-            Min. 8 caractères, une majuscule, un chiffre & un symbole.
+        {error && (
+          <Typography color="red" fontSize={13} mt={1}>
+            {error}
           </Typography>
         )}
 
         <Typography fontSize={11} color="gray" mt={2}>
-          En continuant, vous acceptez nos <Link>Conditions d'utilisation</Link>{" "}
-          et notre <Link>Politique de confidentialité</Link>.
+          En continuant, vous acceptez nos{" "}
+          <Link underline="hover">Conditions d'utilisation</Link> et notre{" "}
+          <Link underline="hover">Politique de confidentialité</Link>.
         </Typography>
 
         <AnimatedButton
           width="100%"
           height={50}
-          sx={{ mt: 3, fontSize: 17, fontWeight: 700, bgcolor: "#0047FF" }}
+          sx={{
+            mt: 3,
+            fontSize: 17,
+            fontWeight: 700,
+            bgcolor: "#0047FF",
+            opacity: loading ? 0.6 : 1,
+          }}
+          onClick={() =>
+            internalMode === "login" ? handleLogin() : handleRegister()
+          }
         >
-          {internalMode === "login" ? "Se connecter" : "Créer mon compte"}
+          {loading
+            ? "Chargement..."
+            : internalMode === "login"
+            ? "Se connecter"
+            : "Créer mon compte"}
         </AnimatedButton>
       </DialogContent>
     </Dialog>
