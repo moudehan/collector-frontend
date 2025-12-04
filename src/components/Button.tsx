@@ -1,5 +1,5 @@
-import { Button } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import { Button } from "@mui/material";
 import type { ReactNode } from "react";
 
 interface Props {
@@ -10,7 +10,9 @@ interface Props {
   height?: number | string;
   variant?: "contained" | "outlined" | "text";
   showArrow?: boolean;
+  startIcon?: ReactNode;
   children?: ReactNode;
+  center?: boolean;
   sx?: object;
 }
 
@@ -22,14 +24,16 @@ export default function AnimatedButton({
   height = 45,
   variant = "contained",
   showArrow = true,
+  startIcon,
   children,
+  center = false,
   sx = {},
 }: Props) {
   return (
     <Button
       disableRipple
       onClick={onClick}
-      variant={variant}
+      startIcon={startIcon}
       endIcon={
         variant === "text" && showArrow ? <ChevronRightIcon /> : undefined
       }
@@ -39,15 +43,15 @@ export default function AnimatedButton({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: 0.4,
+        gap: 0.7,
         whiteSpace: "nowrap",
-        borderRadius: "50px",
         fontWeight: 600,
         fontSize: 16,
         textTransform: "none",
 
         transition: "transform 0.07s ease-in-out",
         "&:active": { transform: "scale(0.985)" },
+        ...(center && { mx: "auto" }),
 
         "&:focus": { outline: "none" },
         "&:focus-visible": { outline: "none" },
@@ -75,6 +79,10 @@ export default function AnimatedButton({
             transform: "scale(1.02)",
           },
         }),
+        "& .MuiButton-startIcon": {
+          marginRight: "6px",
+          display: "flex",
+        },
 
         ...sx,
       }}
