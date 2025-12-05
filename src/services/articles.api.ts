@@ -25,6 +25,31 @@ export async function fetchArticlesByCategory(categoryId: string) {
   return res.json();
 }
 
+export async function getArticleById(id: string) {
+  const token = localStorage.getItem("UserToken");
+
+  const res = await fetch(`${API_URL}/articles/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) throw new Error("Impossible de charger l'article");
+
+  return res.json();
+}
+
+export async function deleteArticle(id: string) {
+  const token = localStorage.getItem("UserToken");
+
+  const res = await fetch(`${API_URL}/articles/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) throw new Error("Suppression impossible");
+
+  return res.json();
+}
+
 export async function getFollowingArticles() {
   const token = localStorage.getItem("UserToken");
   const res = await fetch(`${API_URL}/articles/following`, {
@@ -38,5 +63,21 @@ export async function getRecommendedArticles() {
   const res = await fetch(`${API_URL}/articles/recommendations`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  return res.json();
+}
+
+export async function createArticle(formData: FormData) {
+  const token = localStorage.getItem("UserToken");
+
+  const res = await fetch(`${API_URL}/articles`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) throw new Error("Erreur lors de la création de l’article");
+
   return res.json();
 }
