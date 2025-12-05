@@ -35,3 +35,17 @@ export async function createShop(body: { name: string; description: string }) {
 
   return res.json();
 }
+
+export async function getShopById(id: string): Promise<Shop> {
+  const token = localStorage.getItem("UserToken");
+
+  const res = await fetch(`${API_URL}/shops/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Impossible de charger la boutique");
+
+  return res.json();
+}

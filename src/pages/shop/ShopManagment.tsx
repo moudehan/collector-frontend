@@ -20,6 +20,7 @@ import {
 
 import { useEffect, useState } from "react";
 
+import { useNavigate } from "react-router-dom";
 import AnimatedButton from "../../components/Button";
 import UserPageLayout from "../../layout/UserPageLayout";
 import { createShop, getMyShops } from "../../services/shop.api";
@@ -38,6 +39,7 @@ export default function CreateShopPage() {
 
   const startIndex = (currentPage - 1) * shopsPerPage;
   const displayedShops = shops.slice(startIndex, startIndex + shopsPerPage);
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function load() {
@@ -117,7 +119,7 @@ export default function CreateShopPage() {
             {displayedShops.map((shop) => (
               <Card
                 key={shop.id}
-                onClick={() => (window.location.href = `/shop/${shop.id}`)}
+                onClick={() => navigate(`/shop/${shop.id}`)}
                 sx={{
                   p: 3,
                   borderRadius: 4,
