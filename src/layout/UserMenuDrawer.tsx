@@ -1,4 +1,10 @@
+import ArticleIcon from "@mui/icons-material/Article";
 import CloseIcon from "@mui/icons-material/Close";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import PersonIcon from "@mui/icons-material/Person";
+import SellIcon from "@mui/icons-material/Sell";
+import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
+
 import {
   Avatar,
   Box,
@@ -7,9 +13,11 @@ import {
   IconButton,
   List,
   ListItemButton,
+  ListItemIcon,
   ListItemText,
   Typography,
 } from "@mui/material";
+
 import { useState } from "react";
 
 interface Props {
@@ -22,9 +30,19 @@ export default function UserMenuDrawer({ open, onClose, firstname }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
 
   const menuItems = [
-    { label: "Mon profil", path: "/profile" },
-    { label: "Mes articles", path: "/my-articles" },
-    { label: "Mes favoris", path: "/favorites" },
+    { label: "Mon profil", path: "/profile", icon: <PersonIcon /> },
+    {
+      label: "Historique d’achats",
+      path: "/purchase-history",
+      icon: <ShoppingBagIcon />,
+    },
+    {
+      label: "Historique de ventes",
+      path: "/sales-history",
+      icon: <SellIcon />,
+    },
+    { label: "Mes articles", path: "/my-articles", icon: <ArticleIcon /> },
+    { label: "Mes favoris", path: "/favorites", icon: <FavoriteIcon /> },
   ];
 
   return (
@@ -37,6 +55,7 @@ export default function UserMenuDrawer({ open, onClose, firstname }: Props) {
           flexDirection: "column",
         }}
       >
+        {/* HEADER */}
         <Box
           sx={{
             background: "linear-gradient(135deg, #0047FF, #002B99)",
@@ -49,12 +68,7 @@ export default function UserMenuDrawer({ open, onClose, firstname }: Props) {
         >
           <IconButton
             onClick={onClose}
-            sx={{
-              position: "absolute",
-              top: 12,
-              right: 12,
-              color: "#fff",
-            }}
+            sx={{ position: "absolute", top: 12, right: 12, color: "#fff" }}
           >
             <CloseIcon />
           </IconButton>
@@ -83,6 +97,7 @@ export default function UserMenuDrawer({ open, onClose, firstname }: Props) {
           </Typography>
         </Box>
 
+        {/* MENU */}
         <Box sx={{ flexGrow: 1, p: 2 }}>
           <List>
             {menuItems.map((item) => (
@@ -99,11 +114,17 @@ export default function UserMenuDrawer({ open, onClose, firstname }: Props) {
                     selected === item.label
                       ? "rgba(0, 71, 255, 0.12)"
                       : "transparent",
-                  "&:hover": {
-                    backgroundColor: "rgba(0, 71, 255, 0.18)",
-                  },
+                  "&:hover": { backgroundColor: "rgba(0, 71, 255, 0.18)" },
                 }}
               >
+                <ListItemIcon
+                  sx={{
+                    color: selected === item.label ? "#0047FF" : "#222",
+                    minWidth: 34,
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
                 <ListItemText
                   primary={item.label}
                   primaryTypographyProps={{
@@ -116,6 +137,7 @@ export default function UserMenuDrawer({ open, onClose, firstname }: Props) {
 
             <Divider sx={{ my: 2 }} />
 
+            {/* LOGOUT */}
             <ListItemButton
               onClick={() => {
                 localStorage.clear();
