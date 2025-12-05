@@ -17,7 +17,6 @@ import {
   ListItemText,
   Typography,
 } from "@mui/material";
-
 import { useState } from "react";
 
 interface Props {
@@ -55,7 +54,6 @@ export default function UserMenuDrawer({ open, onClose, firstname }: Props) {
           flexDirection: "column",
         }}
       >
-        {/* HEADER */}
         <Box
           sx={{
             background: "linear-gradient(135deg, #0047FF, #002B99)",
@@ -97,7 +95,6 @@ export default function UserMenuDrawer({ open, onClose, firstname }: Props) {
           </Typography>
         </Box>
 
-        {/* MENU */}
         <Box sx={{ flexGrow: 1, p: 2 }}>
           <List>
             {menuItems.map((item) => (
@@ -137,7 +134,6 @@ export default function UserMenuDrawer({ open, onClose, firstname }: Props) {
 
             <Divider sx={{ my: 2 }} />
 
-            {/* LOGOUT */}
             <ListItemButton
               onClick={() => {
                 localStorage.clear();
