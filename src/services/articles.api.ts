@@ -2,7 +2,26 @@ import { API_URL } from "../config";
 
 export async function fetchPublicArticles() {
   try {
-    const res = await fetch(`${API_URL}/articles`);
+    const res = await fetch(`${API_URL}/articles/public`);
+
+    if (!res.ok) {
+      throw new Error("Erreur lors de la récupération des articles");
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.error("API ERROR:", err);
+    throw err;
+  }
+}
+
+export async function fetchPrivateArticles() {
+  try {
+    const token = localStorage.getItem("UserToken");
+
+    const res = await fetch(`${API_URL}/articles`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     if (!res.ok) {
       throw new Error("Erreur lors de la récupération des articles");
@@ -78,6 +97,58 @@ export async function createArticle(formData: FormData) {
   });
 
   if (!res.ok) throw new Error("Erreur lors de la création de l’article");
+
+  return res.json();
+}
+
+export async function updateArticle(id: string, formData: FormData) {
+  const token = localStorage.getItem("UserToken");
+
+  const res = await fetch(`${API_URL}/articles/${id}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error("Erreur lors de la modification");
+  }
+
+  return res.json();
+}
+
+export async function followArticle(id: string | number) {
+  const token = localStorage.getItem("UserToken");
+
+  const res = await fetch(`${API_URL}/articles/${id}/follow`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Erreur lors du follow de l’article");
+  }
+
+  return res.json();
+}
+
+export async function unfollowArticle(id: string | number) {
+  const token = localStorage.getItem("UserToken");
+
+  const res = await fetch(`${API_URL}/articles/${id}/follow`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Erreur lors du unfollow de l’article");
+  }
 
   return res.json();
 }
