@@ -4,6 +4,7 @@ import ArticleAddPage from "./pages/article/ArticleAddPage";
 import ArticleDetailPage from "./pages/article/ArticleDetailPage";
 import ArticleDetailPageBuyer from "./pages/article/ArticleDetailPageBuyer";
 import Home from "./pages/Home";
+import NotificationsPage from "./pages/notifications/NotificationsPage";
 import ShopDetailPage from "./pages/shop/ShopDetailPage";
 import CreateShopPage from "./pages/shop/ShopManagment";
 import FavoritesPage from "./pages/user/Favorites";
@@ -95,6 +96,15 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <FavoritesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
               </ProtectedRoute>
             }
           />
