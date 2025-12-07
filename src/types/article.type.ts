@@ -18,6 +18,7 @@ export interface Article {
   updated_at: string;
   shop: Shop;
   likesCount: number;
+  isFavorite?: boolean;
   price_history: PriceHistoryItem[];
   images: { id: string; url: string }[];
   seller: {
@@ -34,3 +35,18 @@ export type PriceHistoryItem = {
   new_price: number;
   changed_at: string;
 };
+
+export interface UpdatedArticlePayload {
+  title: string;
+  price: number | string;
+  description: string;
+  categoryId: string;
+  shopId: string;
+  oldImages: ArticleImage[];
+  newImages: File[];
+}
+
+export interface ArticleImage {
+  id?: string;
+  url: string;
+}

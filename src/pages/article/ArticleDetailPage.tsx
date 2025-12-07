@@ -22,8 +22,16 @@ import ModalDeleteConfirm from "../../components/ModaleDeleteConfirm";
 import ArticleEditModal from "./ArticleEditModal";
 
 import { API_URL } from "../../config";
-import { deleteArticle, getArticleById } from "../../services/articles.api";
-import type { Article, Category } from "../../types/article.type";
+import {
+  deleteArticle,
+  getArticleById,
+  updateArticle,
+} from "../../services/articles.api";
+import type {
+  Article,
+  Category,
+  UpdatedArticlePayload,
+} from "../../types/article.type";
 import type { Shop } from "../../types/shop.type";
 
 export default function ArticleDetailPage() {
@@ -69,6 +77,39 @@ export default function ArticleDetailPage() {
       navigate(`/shop/${shop?.id}`);
     } catch (e) {
       console.error("Erreur suppression :", e);
+    }
+  }
+
+  async function handleUpdate(payload: UpdatedArticlePayload) {
+    if (!article) return;
+
+    const formData = new FormData();
+    formData.append("title", payload.title);
+    formData.append("description", payload.description);
+    formData.append("price", String(payload.price));
+    formData.append("shipping_cost", "0"); // ou la vraie valeur
+    formData.append("shopId", payload.shopId);
+
+    if (payload.categoryId) formData.append("categoryId", payload.categoryId);
+
+    formData.append("oldImages", JSON.stringify(payload.oldImages));
+
+    payload.newImages.forEach((file: File) => {
+      formData.append("newImages", file);
+    });
+
+    try {
+      const updated = await updateArticle(article.id, formData);
+      const fixedImages =
+        updated.images?.map((img: { url: string }) => ({
+          ...img,
+          url: img.url.startsWith("http") ? img.url : `${API_URL}${img.url}`,
+        })) ?? [];
+
+      setArticle({ ...updated, images: fixedImages });
+      setOpenEdit(false);
+    } catch (e) {
+      console.error(e);
     }
   }
 
@@ -164,7 +205,7 @@ export default function ArticleDetailPage() {
           onClose={() => setOpenEdit(false)}
           article={article}
           categories={categories}
-          onSave={() => setOpenEdit(false)}
+          onSave={handleUpdate}
         />
 
         <ModalDeleteConfirm
