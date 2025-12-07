@@ -6,7 +6,7 @@ import UserPageLayout from "../layout/UserPageLayout";
 
 import {
   fetchArticlesByCategory,
-  fetchPublicArticles,
+  fetchPrivateArticles,
 } from "../services/articles.api";
 import { fetchPublicCategories } from "../services/categories.api";
 
@@ -14,6 +14,8 @@ import StorefrontIcon from "@mui/icons-material/Storefront";
 import ArticleCardList from "../layout/ArticleCardList";
 import CategoryButtonList from "../layout/CategoryButtonList";
 
+import { useLocation, useNavigate } from "react-router-dom";
+import BuyerArticleCard from "../components/buyer/BuyerArticlecard";
 import type { Article, Category } from "../types/article.type";
 
 export default function UserHome() {
@@ -26,13 +28,25 @@ export default function UserHome() {
   );
   const [categoryArticles, setCategoryArticles] = useState<Article[]>([]);
 
+  const location = useLocation();
+
+  const navigate = useNavigate();
   useEffect(() => {
     async function load() {
-      setArticles(await fetchPublicArticles());
-      setCategories(await fetchPublicCategories());
+      try {
+        const [articlesData, categoriesData] = await Promise.all([
+          fetchPrivateArticles(),
+          fetchPublicCategories(),
+        ]);
+
+        setArticles(articlesData);
+        setCategories(categoriesData);
+      } catch (e) {
+        console.error("Erreur rechargement Home :", e);
+      }
     }
     load();
-  }, []);
+  }, [location.key]);
 
   async function handleCategoryClick(cat: Category) {
     setSelectedCategory(cat);
@@ -147,7 +161,22 @@ export default function UserHome() {
           Derniers articles publiés
         </Typography>
 
-        <ArticleCardList articles={articles} />
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 3,
+            flexWrap: "wrap",
+          }}
+        >
+          {articles.map((art) => (
+            <BuyerArticleCard
+              key={art.id}
+              article={art}
+              onClick={() => navigate(`/article/detail/${art.id}`)}
+            />
+          ))}
+        </Box>
       </Container>
     </UserPageLayout>
   );
