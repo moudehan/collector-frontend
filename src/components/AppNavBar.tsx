@@ -1,11 +1,13 @@
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import LanguageIcon from "@mui/icons-material/Language";
 import MenuIcon from "@mui/icons-material/Menu";
+import NotificationsIcon from "@mui/icons-material/Notifications";
 import SearchIcon from "@mui/icons-material/Search";
 
 import {
   AppBar,
   Avatar,
+  Badge,
   Box,
   IconButton,
   InputAdornment,
@@ -13,18 +15,77 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import UserMenuDrawer from "../layout/UserMenuDrawer";
 import AuthModal from "../pages/AuthModal";
 import AnimatedButton from "./Button";
+import type { Item } from "./DropDownList";
+import DropdownList from "./DropDownList";
+
+import {
+  getUserNotifications,
+  markAllNotificationsAsRead,
+  markAllNotificationsAsUnread,
+  markNotificationAsRead,
+} from "../services/notifications.api";
+
+import { useArticleNotifications } from "../services/socket";
 
 export default function AppNavbar() {
   const token = localStorage.getItem("UserToken");
   const firstname = localStorage.getItem("firstname") || "U";
+  const navigate = useNavigate();
+
   const [openAuth, setOpenAuth] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [openDrawer, setOpenDrawer] = useState(false);
   const toggleDrawer = () => setOpenDrawer(!openDrawer);
+
+  const [notifAnchor, setNotifAnchor] = useState<HTMLElement | null>(null);
+  const [visibleCount, setVisibleCount] = useState(10);
+  const [notifications, setNotifications] = useState<Item[]>([]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    (async () => {
+      const data = await getUserNotifications();
+
+      setNotifications(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data.map((n: any) => ({
+          id: n.id,
+          title:
+            n.type === "NEW_ARTICLE" ? "Nouvel article ajouté" : "Notification",
+          subtitle:
+            n.payload?.title ?? n.payload?.message ?? "Nouvelle notification",
+          is_read: n.is_read,
+          article_id: n.payload?.article_id,
+        }))
+      );
+    })();
+  }, [token]);
+
+  useArticleNotifications((notif) => {
+    setNotifications((prev) => {
+      const exists = prev.some((n) => n.id === notif.id);
+      if (exists) return prev;
+
+      return [
+        {
+          id: notif.id,
+          title: "Nouvel article ajouté",
+          subtitle: notif.title,
+          is_read: false,
+          article_id: notif.article_id,
+        },
+        ...prev,
+      ];
+    });
+  });
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
     <>
@@ -38,19 +99,14 @@ export default function AppNavbar() {
           pl: 10,
         }}
       >
-        <Toolbar
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 2,
-            px: 2,
-          }}
-        >
+        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
           <Typography
             variant="h5"
             fontWeight={1000}
-            sx={{ color: "#1e4fff", whiteSpace: "nowrap" }}
+            sx={{ color: "#1e4fff", cursor: "pointer" }}
+            onClick={() => {
+              window.location.href = "/";
+            }}
           >
             COLLECTOR<span style={{ color: "#000" }}>.shop</span>
           </Typography>
@@ -65,42 +121,70 @@ export default function AppNavbar() {
                     <SearchIcon sx={{ color: "#1e4fff" }} />
                   </InputAdornment>
                 ),
-                sx: {
-                  backgroundColor: "#f1f3f8",
-                  height: 50,
-                },
-              }}
-              sx={{
-                "& .MuiInputBase-root": {
-                  fontSize: "16px",
-                  height: 50,
-                },
               }}
             />
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <FavoriteBorderIcon sx={{ color: "#1e4fff", fontSize: 30 }} />
-            <LanguageIcon sx={{ color: "#1e4fff", fontSize: 30 }} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {token && (
+              <>
+                <IconButton onClick={(e) => setNotifAnchor(e.currentTarget)}>
+                  <Badge badgeContent={unreadCount} color="error">
+                    <NotificationsIcon />
+                  </Badge>
+                </IconButton>
+
+                <DropdownList
+                  anchorEl={notifAnchor}
+                  open={Boolean(notifAnchor)}
+                  onClose={() => setNotifAnchor(null)}
+                  items={notifications.slice(0, visibleCount)}
+                  emptyText="Aucune notification"
+                  onItemClick={async (item) => {
+                    // ✅ 1. MAJ LOCALE IMMÉDIATE
+                    setNotifications((prev) =>
+                      prev.map((n) =>
+                        n.id === item.id ? { ...n, is_read: true } : n
+                      )
+                    );
+
+                    await markNotificationAsRead(item.id);
+
+                    setNotifAnchor(null);
+
+                    requestAnimationFrame(() => {
+                      if (item.article_id) {
+                        navigate(`/article/detail/${item.article_id}`);
+                      }
+                    });
+                  }}
+                  onMarkAllRead={async () => {
+                    await markAllNotificationsAsRead();
+                    setNotifications((prev) =>
+                      prev.map((n) => ({ ...n, is_read: true }))
+                    );
+                  }}
+                  onMarkAllUnread={async () => {
+                    await markAllNotificationsAsUnread();
+                    setNotifications((prev) =>
+                      prev.map((n) => ({ ...n, is_read: false }))
+                    );
+                  }}
+                  onViewAll={() => navigate("/notifications")}
+                  onLoadMore={() => setVisibleCount((prev) => prev + 10)}
+                  hasMore={visibleCount < notifications.length}
+                />
+              </>
+            )}
+
+            <FavoriteBorderIcon />
+            <LanguageIcon />
 
             {token && (
               <>
-                <Avatar sx={{ bgcolor: "#1e4fff", width: 45, height: 45 }}>
-                  {firstname[0].toUpperCase()}
-                </Avatar>
-
-                <IconButton
-                  disableRipple
-                  sx={{
-                    "&:focus": { outline: "none" },
-                    "&:focus-visible": { outline: "none" },
-                    "& .MuiTouchRipple-root": { display: "none" },
-                    "&:active": { outline: "none" },
-                    ml: 20,
-                  }}
-                  onClick={toggleDrawer}
-                >
-                  <MenuIcon sx={{ fontSize: 30, color: "#1e4fff" }} />
+                <Avatar>{firstname[0]}</Avatar>
+                <IconButton onClick={toggleDrawer}>
+                  <MenuIcon />
                 </IconButton>
               </>
             )}
