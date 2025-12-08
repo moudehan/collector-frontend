@@ -52,18 +52,28 @@ export default function AppNavbar() {
     (async () => {
       const data = await getUserNotifications();
 
-      setNotifications(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data.map((n: any) => ({
-          id: n.id,
-          title:
-            n.type === "NEW_ARTICLE" ? "Nouvel article ajouté" : "Notification",
-          subtitle:
-            n.payload?.title ?? n.payload?.message ?? "Nouvelle notification",
-          is_read: n.is_read,
-          article_id: n.payload?.article_id,
-        }))
-      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const formatted = data.map((n: any) => ({
+        id: n.id,
+        title:
+          n.type === "NEW_ARTICLE" ? "Nouvel article ajouté" : "Notification",
+        subtitle:
+          n.payload?.title ?? n.payload?.message ?? "Nouvelle notification",
+        is_read: n.is_read,
+        article_id: n.payload?.article_id,
+      }));
+
+      setNotifications((prev) => {
+        const merged = [...formatted];
+
+        prev.forEach((oldNotif) => {
+          if (!merged.some((n) => n.id === oldNotif.id)) {
+            merged.push(oldNotif);
+          }
+        });
+
+        return merged;
+      });
     })();
   }, [token]);
 
