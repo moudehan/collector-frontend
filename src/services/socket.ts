@@ -11,6 +11,8 @@ export type SocketNotification = {
 };
 
 export interface LiveNotification {
+  message: string | undefined;
+  type: string;
   id: string;
   title: string;
   article_id: string;
@@ -42,6 +44,8 @@ export function useArticleNotifications(
         article_id: notif.articleId,
         is_read: false,
         created_at: notif.created_at,
+        message: undefined,
+        type: "",
       });
     });
 

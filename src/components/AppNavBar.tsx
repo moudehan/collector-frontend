@@ -56,11 +56,18 @@ export default function AppNavbar() {
       const formatted = data.map((n: any) => ({
         id: n.id,
         title:
-          n.type === "NEW_ARTICLE" ? "Nouvel article ajouté" : "Notification",
+          n.type === "NEW_ARTICLE"
+            ? "Nouvel article ajouté"
+            : n.type === "ARTICLE_UPDATED"
+            ? "Article mis à jour"
+            : "Notification",
         subtitle:
-          n.payload?.title ?? n.payload?.message ?? "Nouvelle notification",
+          n.type === "ARTICLE_UPDATED"
+            ? n.payload?.message
+            : n.payload?.title ?? n.payload?.message ?? "Nouvelle notification",
         is_read: n.is_read,
         article_id: n.payload?.article_id,
+        type: n.type,
       }));
 
       setNotifications((prev) => {
@@ -85,10 +92,15 @@ export default function AppNavbar() {
       return [
         {
           id: notif.id,
-          title: "Nouvel article ajouté",
-          subtitle: notif.title,
+          title:
+            notif.type === "ARTICLE_UPDATED"
+              ? "Article mis à jour"
+              : "Nouvel article ajouté",
+          subtitle:
+            notif.type === "ARTICLE_UPDATED" ? notif.message : notif.title,
           is_read: false,
           article_id: notif.article_id,
+          type: notif.type,
         },
         ...prev,
       ];

@@ -50,13 +50,13 @@ export default function NotificationsPage() {
     setNotifications((prev) => [
       {
         id: notif.id,
-        type: "NEW_ARTICLE",
+        type: notif.type,
         is_read: false,
         created_at: notif.created_at,
         payload: {
           article_id: notif.article_id,
           title: notif.title,
-          message: notif.title,
+          message: notif.message,
         },
       },
       ...prev,
@@ -152,7 +152,11 @@ export default function NotificationsPage() {
               </Badge>
 
               <Box flex={1}>
-                <Typography fontWeight={800}>Nouvel article publié</Typography>
+                <Typography fontWeight={800}>
+                  {notif.type === "ARTICLE_UPDATED"
+                    ? "Article mis à jour"
+                    : "Nouvel article publié"}
+                </Typography>
 
                 <Typography color="gray" fontSize={14}>
                   {notif.payload?.title ||
