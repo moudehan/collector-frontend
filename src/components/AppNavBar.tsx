@@ -84,23 +84,23 @@ export default function AppNavbar() {
     })();
   }, [token]);
 
-  useArticleNotifications((notif) => {
+  useArticleNotifications((raw) => {
+    if (!raw?.id || !raw?.type || !raw?.article_id) return;
     setNotifications((prev) => {
-      const exists = prev.some((n) => n.id === notif.id);
+      const exists = prev.some((n) => n.id === raw.id);
       if (exists) return prev;
 
       return [
         {
-          id: notif.id,
+          id: raw.id,
           title:
-            notif.type === "ARTICLE_UPDATED"
+            raw.type === "ARTICLE_UPDATED"
               ? "Article mis à jour"
               : "Nouvel article ajouté",
-          subtitle:
-            notif.type === "ARTICLE_UPDATED" ? notif.message : notif.title,
+          subtitle: raw.type === "ARTICLE_UPDATED" ? raw.message : raw.title,
           is_read: false,
-          article_id: notif.article_id,
-          type: notif.type,
+          article_id: raw.article_id,
+          type: raw.type,
         },
         ...prev,
       ];
