@@ -6,6 +6,7 @@ import ArticleDetailPageBuyer from "./pages/article/ArticleDetailPageBuyer";
 import Home from "./pages/Home";
 import NotificationsPage from "./pages/notifications/NotificationsPage";
 import ShopDetailPage from "./pages/shop/ShopDetailPage";
+import ShopDetailPageBuyer from "./pages/shop/ShopDetailPageBuyer";
 import CreateShopPage from "./pages/shop/ShopManagment";
 import FavoritesPage from "./pages/user/Favorites";
 import ProfilePage from "./pages/user/ProfilePage";
@@ -48,6 +49,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <ShopDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/shop/detail/:id"
+            element={
+              <ProtectedRoute>
+                <ShopDetailPageBuyer />
               </ProtectedRoute>
             }
           />

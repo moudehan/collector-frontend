@@ -4,7 +4,8 @@ export interface Shop {
   id: string;
   name: string;
   description: string;
-
+  avgRating: number;
+  ratingsCount: number;
   owner: {
     id: string;
     firstname: string;
@@ -12,6 +13,7 @@ export interface Shop {
     email: string;
     created_at: string;
   };
+  userRating?: string | number;
   articles: Article[];
   created_at: string;
   updated_at: string;
