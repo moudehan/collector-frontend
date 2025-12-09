@@ -56,7 +56,7 @@ export default function BuyerArticleCard({
   return (
     <Card
       sx={{
-        width: 240,
+        width: 220,
         height: 330,
         cursor: "pointer",
         overflow: "hidden",

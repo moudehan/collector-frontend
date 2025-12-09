@@ -20,6 +20,7 @@ import AnimatedButton from "../../components/Button";
 import UserPageLayout from "../../layout/UserPageLayout";
 
 import ArticleInfoSection from "../../layout/ArticleInfoSection";
+import { rateArticle } from "../../services/article-ratings.api";
 import {
   followArticle,
   getArticleById,
@@ -36,6 +37,9 @@ export default function ArticleDetailPageBuyer() {
   const [shop, setShop] = useState<Shop | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [loadingFav, setLoadingFav] = useState(false);
+  const [avgRating, setAvgRating] = useState(0);
+  const [ratingsCount, setRatingsCount] = useState(0);
+  const [userRating, setUserRating] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -47,6 +51,9 @@ export default function ArticleDetailPageBuyer() {
         setArticle(data);
         setShop(data.shop);
         setIsFavorite(!!data.isFavorite);
+        setAvgRating(data.avgRating ?? 0);
+        setRatingsCount(data.ratingsCount ?? 0);
+        setUserRating(data.userRating ?? null);
       } catch (e) {
         console.error("Erreur chargement article :", e);
       }
@@ -81,9 +88,21 @@ export default function ArticleDetailPageBuyer() {
     }
   }
 
-  if (!article || !shop) return null;
+  async function handleRate(value: number) {
+    if (!article) return;
 
-  const ratingFake = 3.7;
+    try {
+      const res = await rateArticle(article.id, value);
+
+      setUserRating(value);
+      setAvgRating(res.avgRating);
+      setRatingsCount(res.ratingsCount);
+    } catch (e) {
+      console.error("Erreur notation :", e);
+    }
+  }
+
+  if (!article || !shop) return null;
 
   return (
     <UserPageLayout>
@@ -129,13 +148,7 @@ export default function ArticleDetailPageBuyer() {
           <ArticleImageGallery images={article.images} />
 
           <Box sx={{ flex: 1 }}>
-            <Card
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                boxShadow: "0 5px 20px rgba(0,0,0,0.1)",
-              }}
-            >
+            <Card sx={{ p: 3, borderRadius: 3 }}>
               <Typography fontWeight={700} fontSize={20}>
                 Vendeur : {shop.owner.firstname} {shop.owner.lastname}
               </Typography>
@@ -154,7 +167,7 @@ export default function ArticleDetailPageBuyer() {
                 label="Voir la boutique"
                 width="100%"
                 sx={{ mb: 2 }}
-                onClick={() => navigate(`/shop/${shop.id}`)}
+                onClick={() => navigate(`/shop/detail/${shop.id}`)}
               />
 
               <AnimatedButton
@@ -176,12 +189,34 @@ export default function ArticleDetailPageBuyer() {
           </Box>
         </Box>
 
-        <Box sx={{ mt: 4, display: "flex", alignItems: "center", gap: 1 }}>
-          {[1, 2, 3, 4, 5].map((star) => {
-            const filled = ratingFake >= star;
-            const half = ratingFake >= star - 0.5 && ratingFake < star;
+        <Box
+          sx={{
+            mt: 5,
+            p: 4,
+            borderRadius: 4,
+            background: "#ffffff",
+            boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
+          }}
+        >
+          <Typography fontSize={22} fontWeight={900} mb={2}>
+            Avis clients
+          </Typography>
 
-            return (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+            <Typography fontSize={42} fontWeight={900} color="#FFD700">
+              {avgRating.toFixed(1)}
+            </Typography>
+
+            <Box>
+              <Typography fontWeight={700}>Note moyenne</Typography>
+              <Typography color="gray" fontSize={14}>
+                Basée sur {ratingsCount} avis
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: "flex", gap: 0.5, mb: 4 }}>
+            {[1, 2, 3, 4, 5].map((star) => (
               <Box
                 key={star}
                 sx={{
@@ -190,19 +225,62 @@ export default function ArticleDetailPageBuyer() {
                   mask: "url(https://s2.svgbox.net/hero-solid.svg?ic=star) no-repeat center",
                   WebkitMask:
                     "url(https://s2.svgbox.net/hero-solid.svg?ic=star) no-repeat center",
-                  backgroundColor: filled || half ? "#FFD700" : "#D1D1D1",
-                  ...(half && {
-                    background:
-                      "linear-gradient(to right, #FFD700 50%, #D1D1D1 50%)",
-                  }),
+                  backgroundColor: star <= avgRating ? "#FFD700" : "#E0E0E0",
                 }}
               />
-            );
-          })}
+            ))}
+          </Box>
 
-          <Typography fontWeight={700} ml={1}>
-            {ratingFake.toFixed(1)} / 5
+          <Divider sx={{ my: 3 }} />
+
+          <Typography fontWeight={900} mb={2}>
+            Donner votre avis
           </Typography>
+
+          <Typography color="gray" fontSize={14} mb={2}>
+            Votre évaluation aide les autres acheteurs à faire le bon choix.
+          </Typography>
+
+          <Box sx={{ display: "flex", gap: 2 }}>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <Box
+                key={value}
+                onClick={() => handleRate(value)}
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  border: "2px solid #ddd",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 800,
+                  fontSize: 16,
+                  cursor: "pointer",
+                  transition: "0.2s",
+                  background:
+                    userRating !== null
+                      ? value <= userRating
+                        ? "#4CAF50"
+                        : "#fff"
+                      : "#fff",
+
+                  borderColor:
+                    userRating !== null && value <= userRating
+                      ? "#4CAF50"
+                      : "#ddd",
+
+                  color: value <= avgRating ? "#000" : "#444",
+                  "&:hover": {
+                    transform: "scale(1.15)",
+                    borderColor: "#FFD700",
+                  },
+                }}
+              >
+                {value}
+              </Box>
+            ))}
+          </Box>
         </Box>
 
         <Box sx={{ mt: 4 }}>

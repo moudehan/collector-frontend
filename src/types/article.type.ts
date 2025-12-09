@@ -18,6 +18,8 @@ export interface Article {
   updated_at: string;
   shop: Shop;
   likesCount: number;
+  avgRating?: number;
+  ratingsCount?: number;
   isFavorite?: boolean;
   price_history: PriceHistoryItem[];
   images: { id: string; url: string }[];
