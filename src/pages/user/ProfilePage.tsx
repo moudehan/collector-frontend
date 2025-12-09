@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  Switch,
   TextField,
   Typography,
 } from "@mui/material";
@@ -14,13 +15,18 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import EmailIcon from "@mui/icons-material/Email";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import SecurityIcon from "@mui/icons-material/Security";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import AnimatedButton from "../../components/Button";
 import UserPageLayout from "../../layout/UserPageLayout";
+
+import {
+  getNotificationSettings,
+  updateNotificationSettings,
+  type NotificationSettings,
+} from "../../services/notification-settings.api";
 
 export default function ProfilePage() {
   const firstname = localStorage.getItem("firstname") || "Utilisateur";
@@ -29,23 +35,39 @@ export default function ProfilePage() {
   const [openEdit, setOpenEdit] = useState(false);
   const [newName, setNewName] = useState(firstname);
 
+  const [notifSettings, setNotifSettings] = useState<NotificationSettings>({
+    NEW_ARTICLE: true,
+    ARTICLE_UPDATED: true,
+    MAIL_ENABLED: true,
+  });
+
+  useEffect(() => {
+    (async () => {
+      const data = await getNotificationSettings();
+      setNotifSettings(data);
+    })();
+  }, []);
+
   function handleSave() {
     localStorage.setItem("firstname", newName);
     setOpenEdit(false);
     window.location.reload();
   }
 
+  async function toggleNotif(type: keyof NotificationSettings) {
+    const updated = {
+      ...notifSettings,
+      [type]: !notifSettings[type],
+    };
+
+    setNotifSettings(updated);
+    await updateNotificationSettings(updated);
+  }
+
   return (
     <UserPageLayout>
       <Box sx={{ maxWidth: 900, mx: "auto", p: 3 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 3,
-          }}
-        >
+        <Box display="flex" justifyContent="space-between" mb={3}>
           <Typography fontSize={28} fontWeight={900}>
             Mon Profil
           </Typography>
@@ -58,22 +80,10 @@ export default function ProfilePage() {
           />
         </Box>
 
-        <Card
-          sx={{
-            p: 4,
-            borderRadius: 3,
-            boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
+        <Card sx={{ p: 4, borderRadius: 3 }}>
+          <Box display="flex" gap={3} alignItems="center">
             <Avatar
-              sx={{
-                width: 90,
-                height: 90,
-                bgcolor: "#0047FF",
-                fontSize: 32,
-                border: "3px solid #e5e9fc",
-              }}
+              sx={{ width: 90, height: 90, bgcolor: "#0047FF", fontSize: 32 }}
             >
               {firstname[0].toUpperCase()}
             </Avatar>
@@ -84,7 +94,9 @@ export default function ProfilePage() {
               </Typography>
               <Typography
                 color="gray"
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                display="flex"
+                alignItems="center"
+                gap={1}
               >
                 <EmailIcon fontSize="small" /> {email}
               </Typography>
@@ -93,12 +105,9 @@ export default function ProfilePage() {
 
           <Divider sx={{ my: 3 }} />
 
-          <Typography fontWeight={700} mb={1}>
-            Bio
-          </Typography>
+          <Typography fontWeight={700}>Bio</Typography>
           <Typography color="gray" fontSize={15}>
-            Bienvenue sur votre espace personnel Collector. Vous pouvez modifier
-            vos informations, consulter votre activité et gérer votre sécurité.
+            Gérez vos informations personnelles et vos notifications.
           </Typography>
         </Card>
 
@@ -106,60 +115,86 @@ export default function ProfilePage() {
           Statistiques du compte
         </Typography>
 
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 2,
-          }}
-        >
-          <Card sx={{ p: 3, textAlign: "center", borderRadius: 3 }}>
-            <ShoppingCartIcon sx={{ fontSize: 40, color: "#0047FF" }} />
-            <Typography fontWeight={800} fontSize={20} mt={1}>
-              12
-            </Typography>
-            <Typography color="gray">Achats effectués</Typography>
+        <Box display="grid" gridTemplateColumns="repeat(3, 1fr)" gap={2}>
+          <Card sx={{ p: 3, textAlign: "center" }}>
+            <ShoppingCartIcon color="primary" sx={{ fontSize: 40 }} />
+            <Typography fontWeight={800}>12</Typography>
+            <Typography color="gray">Achats</Typography>
           </Card>
 
-          <Card sx={{ p: 3, textAlign: "center", borderRadius: 3 }}>
-            <FavoriteIcon sx={{ fontSize: 40, color: "#ff3377" }} />
-            <Typography fontWeight={800} fontSize={20} mt={1}>
-              48
-            </Typography>
-            <Typography color="gray">Articles favoris</Typography>
+          <Card sx={{ p: 3, textAlign: "center" }}>
+            <FavoriteIcon sx={{ color: "#ff3377", fontSize: 40 }} />
+            <Typography fontWeight={800}>48</Typography>
+            <Typography color="gray">Favoris</Typography>
           </Card>
 
-          <Card sx={{ p: 3, textAlign: "center", borderRadius: 3 }}>
-            <SecurityIcon sx={{ fontSize: 40, color: "#00a86b" }} />
-            <Typography fontWeight={800} fontSize={20} mt={1}>
-              OK
-            </Typography>
-            <Typography color="gray">Sécurité du compte</Typography>
+          <Card sx={{ p: 3, textAlign: "center" }}>
+            <ShoppingCartIcon color="primary" sx={{ fontSize: 40 }} />
+            <Typography fontWeight={800}>12</Typography>
+            <Typography color="gray">Achats</Typography>
           </Card>
         </Box>
 
-        <Typography fontSize={22} fontWeight={800} mt={4} mb={2}>
-          Paramètres du compte
+        <Typography fontSize={22} fontWeight={800} mt={4}>
+          Paramétres du compte
         </Typography>
 
-        <Card
-          sx={{
-            p: 3,
-            borderRadius: 3,
-            boxShadow: "0 6px 15px rgba(0,0,0,0.05)",
-          }}
-        >
+        <Card sx={{ p: 3, mt: 2 }}>
           <Typography fontWeight={700}>Informations personnelles</Typography>
           <Typography color="gray" fontSize={14}>
             Nom, prénom, email, préférences d'affichage...
           </Typography>
 
-          <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 4 }} />
 
-          <Typography fontWeight={700}>Sécurité</Typography>
-          <Typography color="gray" fontSize={14}>
-            Mot de passe, sessions actives, validation en 2 étapes.
-          </Typography>
+          <Typography fontWeight={700}>Paramètres des notifications</Typography>
+
+          <Box display="flex" justifyContent="space-between" my={2} px={4}>
+            <Box>
+              <Typography fontWeight={700}>Nouveaux articles</Typography>
+              <Typography fontSize={13} color="gray">
+                Recevoir une notification lors d’une nouvelle publication
+              </Typography>
+            </Box>
+
+            <Switch
+              checked={notifSettings.NEW_ARTICLE}
+              onChange={() => toggleNotif("NEW_ARTICLE")}
+            />
+          </Box>
+
+          <Box display="flex" justifyContent="space-between" mb={2} px={4}>
+            <Box>
+              <Typography fontWeight={700}>Article mis à jour</Typography>
+              <Typography fontSize={13} color="gray">
+                Notification si un article que vous suivez est modifié
+              </Typography>
+            </Box>
+
+            <Switch
+              checked={notifSettings.ARTICLE_UPDATED}
+              onChange={() => toggleNotif("ARTICLE_UPDATED")}
+            />
+          </Box>
+
+          <Box display="flex" justifyContent="space-between" mb={2} px={4}>
+            <Box display="flex" alignItems="center" gap={1}>
+              <EmailIcon color="primary" />
+              <Box>
+                <Typography fontWeight={700}>
+                  Notifications par email
+                </Typography>
+                <Typography fontSize={13} color="gray">
+                  Recevoir aussi les notifications par mail
+                </Typography>
+              </Box>
+            </Box>
+
+            <Switch
+              checked={notifSettings.MAIL_ENABLED}
+              onChange={() => toggleNotif("MAIL_ENABLED")}
+            />
+          </Box>
         </Card>
       </Box>
 
