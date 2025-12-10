@@ -18,6 +18,7 @@ import { enqueueSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AnimatedButton from "../components/Button";
+import { useAuth } from "../contexte/UseAuth";
 import { login, registerUser } from "../services/auth.api";
 
 interface Props {
@@ -43,6 +44,7 @@ export default function AuthModal({
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { refreshUser } = useAuth();
 
   const navigate = useNavigate();
 
@@ -82,9 +84,10 @@ export default function AuthModal({
 
       const data = await login(email, password);
       localStorage.setItem("UserToken", data.access_token);
+      await refreshUser();
 
       onClose();
-      navigate("/");
+      navigate("/Home");
     } catch {
       setError("Email ou mot de passe incorrect.");
     } finally {

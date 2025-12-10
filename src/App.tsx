@@ -1,5 +1,6 @@
 import { SnackbarProvider } from "notistack";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "./contexte/AuthProvider";
 import ArticleAddPage from "./pages/article/ArticleAddPage";
 import ArticleDetailPage from "./pages/article/ArticleDetailPage";
 import ArticleDetailPageBuyer from "./pages/article/ArticleDetailPageBuyer";
@@ -18,106 +19,108 @@ export default function App() {
   return (
     <SnackbarProvider maxSnack={3} autoHideDuration={4000}>
       <BrowserRouter>
-        <Routes>
-          <Route path="/Home" element={<Home />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <UserHome />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/ShopManagement"
-            element={
-              <ProtectedRoute>
-                <CreateShopPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/shop/:id"
-            element={
-              <ProtectedRoute>
-                <ShopDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/shop/detail/:id"
-            element={
-              <ProtectedRoute>
-                <ShopDetailPageBuyer />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/article/:id"
-            element={
-              <ProtectedRoute>
-                <ArticleDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/article/detail/:id"
-            element={
-              <ProtectedRoute>
-                <ArticleDetailPageBuyer />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="shop/:shopId/article/add"
-            element={
-              <ProtectedRoute>
-                <ArticleAddPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="purchase-history"
-            element={
-              <ProtectedRoute>
-                <PurchaseHistory />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="sales-history"
-            element={
-              <ProtectedRoute>
-                <SalesHistory />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="favorites"
-            element={
-              <ProtectedRoute>
-                <FavoritesPage />
-              </ProtectedRoute>
-            }
-          />
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route
+              path="/Home"
+              element={
+                <ProtectedRoute>
+                  <UserHome />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ShopManagement"
+              element={
+                <ProtectedRoute>
+                  <CreateShopPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/shop/:id"
+              element={
+                <ProtectedRoute>
+                  <ShopDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/shop/detail/:id"
+              element={
+                <ProtectedRoute>
+                  <ShopDetailPageBuyer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/article/:id"
+              element={
+                <ProtectedRoute>
+                  <ArticleDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/article/detail/:id"
+              element={
+                <ProtectedRoute>
+                  <ArticleDetailPageBuyer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="shop/:shopId/article/add"
+              element={
+                <ProtectedRoute>
+                  <ArticleAddPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="purchase-history"
+              element={
+                <ProtectedRoute>
+                  <PurchaseHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="sales-history"
+              element={
+                <ProtectedRoute>
+                  <SalesHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="favorites"
+              element={
+                <ProtectedRoute>
+                  <FavoritesPage />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/notifications"
-            element={
-              <ProtectedRoute>
-                <NotificationsPage />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <NotificationsPage />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </SnackbarProvider>
   );

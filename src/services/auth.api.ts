@@ -38,14 +38,19 @@ export async function login(email: string, password: string) {
   return data;
 }
 
-export async function logout() {
+export async function logoutApi() {
   const token = localStorage.getItem("UserToken");
 
-  await fetch(`${API_URL}auth/logout`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  localStorage.removeItem("UserToken");
-  window.location.href = "/login";
+  try {
+    if (token) {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+  } catch (err) {
+    console.error("Erreur logout API", err);
+  } finally {
+    localStorage.removeItem("UserToken");
+  }
 }

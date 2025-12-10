@@ -1,14 +1,20 @@
 import type { JSX } from "react";
-import { Navigate } from "react-router-dom";
+import { useAuth } from "../contexte/UseAuth";
+import ErrorPage from "../pages/error/ErrorPage";
 
 export default function ProtectedRoute({
   children,
 }: {
   children: JSX.Element;
 }) {
-  const token = localStorage.getItem("UserToken");
-  if (!token) {
-    return <Navigate to="/Home" replace />;
+  const { user, loading, isLoggingOut } = useAuth();
+
+  if (loading || isLoggingOut) {
+    return null;
+  }
+
+  if (!user) {
+    return <ErrorPage />;
   }
 
   return children;

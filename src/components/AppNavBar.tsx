@@ -1,6 +1,5 @@
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import LanguageIcon from "@mui/icons-material/Language";
-import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import SearchIcon from "@mui/icons-material/Search";
 
@@ -30,12 +29,12 @@ import {
   markNotificationAsRead,
 } from "../services/notifications.api";
 
+import { useAuth } from "../contexte/UseAuth";
 import { useArticleNotifications } from "../services/socket";
 
 export default function AppNavbar() {
-  const token = localStorage.getItem("UserToken");
-  const firstname = localStorage.getItem("firstname") || "U";
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
 
   const [openAuth, setOpenAuth] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -47,7 +46,7 @@ export default function AppNavbar() {
   const [notifications, setNotifications] = useState<Item[]>([]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!user) return;
 
     (async () => {
       const data = await getUserNotifications();
@@ -82,7 +81,7 @@ export default function AppNavbar() {
         return merged;
       });
     })();
-  }, [token]);
+  }, [user]);
 
   useArticleNotifications((raw) => {
     if (!raw?.id || !raw?.type || !raw?.article_id) return;
@@ -108,6 +107,7 @@ export default function AppNavbar() {
   });
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+  if (loading) return null;
 
   return (
     <>
@@ -127,7 +127,9 @@ export default function AppNavbar() {
             fontWeight={1000}
             sx={{ color: "#1e4fff", cursor: "pointer" }}
             onClick={() => {
-              window.location.href = "/";
+              if (user) {
+                navigate("/Home");
+              }
             }}
           >
             COLLECTOR<span style={{ color: "#000" }}>.shop</span>
@@ -148,7 +150,7 @@ export default function AppNavbar() {
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {token && (
+            {user && (
               <>
                 <IconButton onClick={(e) => setNotifAnchor(e.currentTarget)}>
                   <Badge badgeContent={unreadCount} color="error">
@@ -163,7 +165,6 @@ export default function AppNavbar() {
                   items={notifications.slice(0, visibleCount)}
                   emptyText="Aucune notification"
                   onItemClick={async (item) => {
-                    // ✅ 1. MAJ LOCALE IMMÉDIATE
                     setNotifications((prev) =>
                       prev.map((n) =>
                         n.id === item.id ? { ...n, is_read: true } : n
@@ -201,19 +202,18 @@ export default function AppNavbar() {
 
             <FavoriteBorderIcon />
             <LanguageIcon />
-
-            {token && (
+            {user && (
               <>
-                <Avatar>{firstname[0]}</Avatar>
                 <IconButton onClick={toggleDrawer}>
-                  <MenuIcon />
+                  <Avatar>{user.userName?.[0]?.toUpperCase() ?? "U"}</Avatar>
                 </IconButton>
               </>
             )}
-            {!token && (
+            {!user && (
               <AnimatedButton
                 label="Se connecter"
                 variant="outlined"
+                sx={{ border: 1 }}
                 width="auto"
                 onClick={() => {
                   setAuthMode("login");
@@ -231,11 +231,7 @@ export default function AppNavbar() {
         mode={authMode}
         setMode={setAuthMode}
       />
-      <UserMenuDrawer
-        open={openDrawer}
-        onClose={toggleDrawer}
-        firstname={firstname}
-      />
+      {user && <UserMenuDrawer open={openDrawer} onClose={toggleDrawer} />}
     </>
   );
 }
