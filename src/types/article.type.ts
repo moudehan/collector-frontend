@@ -17,6 +17,7 @@ export interface Article {
   created_at: string;
   updated_at: string;
   shop: Shop;
+  fraud_alerts: [];
   likesCount: number;
   avgRating?: number;
   ratingsCount?: number;

@@ -13,6 +13,7 @@ interface Props {
   startIcon?: ReactNode;
   children?: ReactNode;
   center?: boolean;
+  disabled?: boolean;
   sx?: object;
 }
 
@@ -26,6 +27,7 @@ export default function AnimatedButton({
   showArrow = true,
   startIcon,
   children,
+  disabled = false,
   center = false,
   sx = {},
 }: Props) {
@@ -37,6 +39,7 @@ export default function AnimatedButton({
       endIcon={
         variant === "text" && showArrow ? <ChevronRightIcon /> : undefined
       }
+      disabled={disabled}
       sx={{
         width,
         height,

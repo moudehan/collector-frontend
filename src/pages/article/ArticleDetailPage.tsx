@@ -27,12 +27,65 @@ import {
   getArticleById,
   updateArticle,
 } from "../../services/articles.api";
+
 import type {
   Article,
   Category,
   UpdatedArticlePayload,
 } from "../../types/article.type";
 import type { Shop } from "../../types/shop.type";
+
+import BugReportIcon from "@mui/icons-material/BugReport";
+import CategoryIcon from "@mui/icons-material/Category";
+import DateRangeIcon from "@mui/icons-material/DateRange";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import InfoIcon from "@mui/icons-material/Info";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import StarHalfIcon from "@mui/icons-material/StarHalf";
+import TagIcon from "@mui/icons-material/Tag";
+
+function InfoLine({ label, value }: { label: string; value: string | number }) {
+  const getIcon = () => {
+    const key = label.toLowerCase();
+
+    if (key.includes("id")) return <TagIcon sx={{ color: "#1976d2" }} />;
+    if (key.includes("catégorie"))
+      return <CategoryIcon sx={{ color: "#1976d2" }} />;
+    if (key.includes("prix"))
+      return <LocalOfferIcon sx={{ color: "#1976d2" }} />;
+    if (key.includes("livraison"))
+      return <LocalShippingIcon sx={{ color: "#1976d2" }} />;
+    if (key.includes("créé"))
+      return <DateRangeIcon sx={{ color: "#1976d2" }} />;
+    if (key.includes("mis à jour"))
+      return <DateRangeIcon sx={{ color: "#1976d2" }} />;
+    if (key.includes("likes"))
+      return <FavoriteIcon sx={{ color: "#1976d2" }} />;
+    if (key.includes("anomalie"))
+      return <BugReportIcon sx={{ color: "#1976d2" }} />;
+    if (key.includes("note")) return <StarHalfIcon sx={{ color: "#fbc02d" }} />;
+
+    return <InfoIcon sx={{ color: "#1976d2" }} />;
+  };
+
+  return (
+    <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+      <Box sx={{ mt: "3px" }}>{getIcon()}</Box>
+      <Box sx={{ flex: 1 }}>
+        <Typography sx={{ fontWeight: 700, fontSize: 14, color: "#444" }}>
+          {label}
+        </Typography>
+
+        <Typography sx={{ color: "#555", fontSize: 15 }}>
+          {value ?? "—"}
+        </Typography>
+
+        <Divider sx={{ mt: 1 }} />
+      </Box>
+    </Box>
+  );
+}
 
 export default function ArticleDetailPage() {
   const { id } = useParams();
@@ -51,10 +104,11 @@ export default function ArticleDetailPage() {
       try {
         const data = await getArticleById(id);
 
-        const fixedImages = data.images?.map((img: { url: string }) => ({
-          ...img,
-          url: img.url.startsWith("http") ? img.url : `${API_URL}${img.url}`,
-        }));
+        const fixedImages =
+          data.images?.map((img: { url: string }) => ({
+            ...img,
+            url: img.url.startsWith("http") ? img.url : `${API_URL}${img.url}`,
+          })) ?? [];
 
         setArticle({ ...data, images: fixedImages });
         setShop(data.shop);
@@ -71,6 +125,7 @@ export default function ArticleDetailPage() {
   async function handleDeleteArticle() {
     try {
       if (!article?.id) return;
+
       await deleteArticle(article.id);
 
       setOpenDeleteConfirm(false);
@@ -87,10 +142,12 @@ export default function ArticleDetailPage() {
     formData.append("title", payload.title);
     formData.append("description", payload.description);
     formData.append("price", String(payload.price));
-    formData.append("shipping_cost", "0"); // ou la vraie valeur
+    formData.append("shipping_cost", "0");
     formData.append("shopId", payload.shopId);
 
-    if (payload.categoryId) formData.append("categoryId", payload.categoryId);
+    if (payload.categoryId) {
+      formData.append("categoryId", payload.categoryId);
+    }
 
     formData.append("oldImages", JSON.stringify(payload.oldImages));
 
@@ -100,6 +157,7 @@ export default function ArticleDetailPage() {
 
     try {
       const updated = await updateArticle(article.id, formData);
+
       const fixedImages =
         updated.images?.map((img: { url: string }) => ({
           ...img,
@@ -120,33 +178,76 @@ export default function ArticleDetailPage() {
           <IconButton onClick={() => navigate(-1)}>
             <ArrowBackIosNewIcon />
           </IconButton>
+
           <Typography fontSize={18} fontWeight={700} ml={1}>
             Retour
           </Typography>
         </Box>
 
-        <Box sx={{ display: "flex", gap: 3 }}>
-          <ArticleImageGallery images={article.images} />
+        <Card
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            boxShadow: "0 5px 20px rgba(0,0,0,0.1)",
+            backgroundColor: article.status === "pending" ? "#FFF6D1" : "white",
+            border:
+              article.status === "pending"
+                ? "1px solid #E8C979"
+                : "1px solid transparent",
+            mb: 4,
+          }}
+        >
+          <Box sx={{ display: "flex", gap: 3 }}>
+            <ArticleImageGallery images={article.images} />
 
-          <Box sx={{ flex: 1 }}>
-            <Card
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                boxShadow: "0 5px 20px rgba(0,0,0,0.1)",
-              }}
-            >
-              <Typography fontSize={28} fontWeight={900}>
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ mb: 1 }}>
+                {article.status === "pending" ? (
+                  <Box
+                    sx={{
+                      display: "inline-block",
+                      px: 2,
+                      py: 0.6,
+                      borderRadius: 2,
+                      bgcolor: "#FFD86B",
+                      color: "#8A5A00",
+                      fontWeight: 800,
+                      fontSize: 14,
+                    }}
+                  >
+                    ⏳ En attente d’approbation
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      display: "inline-block",
+                      px: 2,
+                      py: 0.6,
+                      borderRadius: 2,
+                      bgcolor: "#B7FFD1",
+                      color: "#0F7A26",
+                      fontWeight: 800,
+                      fontSize: 14,
+                    }}
+                  >
+                    Article approuvé
+                  </Box>
+                )}
+              </Box>
+
+              <Typography fontSize={32} fontWeight={900}>
                 {article.price} €
               </Typography>
 
               <Divider sx={{ my: 2 }} />
 
-              <Typography fontSize={20} fontWeight={700} mb={1}>
+              <Typography fontSize={22} fontWeight={700} mb={1}>
                 {article.title}
               </Typography>
 
-              <Typography color="gray">{article.description}</Typography>
+              <Typography color="gray" sx={{ whiteSpace: "pre-line" }}>
+                {article.description}
+              </Typography>
 
               <Divider sx={{ my: 3 }} />
 
@@ -167,6 +268,10 @@ export default function ArticleDetailPage() {
                     {shop.description}
                   </Typography>
 
+                  <Typography color="gray" fontSize={14} mt={1}>
+                    Vendeur : {shop.owner?.email}
+                  </Typography>
+
                   <AnimatedButton
                     label="Voir la boutique"
                     width="100%"
@@ -183,6 +288,7 @@ export default function ArticleDetailPage() {
                   variant="outlined"
                   width="100%"
                   sx={{ border: 1 }}
+                  disabled={article.status === "pending"}
                   onClick={() => setOpenEdit(true)}
                 />
 
@@ -193,12 +299,66 @@ export default function ArticleDetailPage() {
                   color="red"
                   width="100%"
                   sx={{ border: 1 }}
+                  disabled={article.status === "pending"}
                   onClick={() => setOpenDeleteConfirm(true)}
                 />
               </Box>
-            </Card>
+            </Box>
           </Box>
-        </Box>
+        </Card>
+
+        <Card
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            boxShadow: "0px 4px 15px rgba(0,0,0,0.08)",
+          }}
+        >
+          <Typography fontSize={22} fontWeight={800} mb={3}>
+            Informations détaillées
+          </Typography>
+
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              rowGap: 2,
+              columnGap: 4,
+            }}
+          >
+            <InfoLine label="ID" value={article.id} />
+            <InfoLine label="Catégorie" value={article.category?.name} />
+            <InfoLine label="Prix" value={`${article.price} €`} />
+            <InfoLine
+              label="Frais de livraison"
+              value={`${article.shipping_cost} €`}
+            />
+            <InfoLine
+              label="Créé le"
+              value={new Date(article.created_at).toLocaleString()}
+            />
+            <InfoLine
+              label="Mis à jour le"
+              value={new Date(article.updated_at).toLocaleString()}
+            />
+            <InfoLine label="Likes" value={article.likesCount} />
+            <InfoLine
+              label="Alertes d'anomalie"
+              value={article.fraud_alerts?.length ?? 0}
+            />
+            <InfoLine
+              label="Note moyenne"
+              value={`${article.avgRating ?? 0} / 5`}
+            />
+          </Box>
+
+          {article.seller?.id === shop?.owner?.id && (
+            <Typography color="gray" fontSize={13} mt={2}>
+              Vous êtes le vendeur : vous ne pouvez pas aimer ou noter votre
+              propre article.
+            </Typography>
+          )}
+        </Card>
 
         <ArticleEditModal
           open={openEdit}
