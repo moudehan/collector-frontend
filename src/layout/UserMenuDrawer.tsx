@@ -1,9 +1,9 @@
-import ArticleIcon from "@mui/icons-material/Article";
 import CloseIcon from "@mui/icons-material/Close";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import PersonIcon from "@mui/icons-material/Person";
 import SellIcon from "@mui/icons-material/Sell";
 import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
+import ArticleIcon from "@mui/icons-material/StoreRounded";
 
 import {
   Avatar,
@@ -17,16 +17,18 @@ import {
   ListItemText,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexte/UseAuth";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  firstname: string;
 }
 
-export default function UserMenuDrawer({ open, onClose, firstname }: Props) {
-  const [selected, setSelected] = useState<string | null>(null);
+export default function UserMenuDrawer({ open, onClose }: Props) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const menuItems = [
     { label: "Mon profil", path: "/profile", icon: <PersonIcon /> },
@@ -40,7 +42,7 @@ export default function UserMenuDrawer({ open, onClose, firstname }: Props) {
       path: "/sales-history",
       icon: <SellIcon />,
     },
-    { label: "Mes articles", path: "/my-articles", icon: <ArticleIcon /> },
+    { label: "Mes boutiques", path: "/ShopManagement", icon: <ArticleIcon /> },
     { label: "Mes favoris", path: "/favorites", icon: <FavoriteIcon /> },
   ];
 
@@ -83,62 +85,60 @@ export default function UserMenuDrawer({ open, onClose, firstname }: Props) {
               border: "3px solid #fff",
             }}
           >
-            {firstname[0].toUpperCase()}
+            {user?.firstname?.[0]?.toUpperCase() ?? "?"}
           </Avatar>
 
           <Typography fontSize={20} fontWeight={700} mt={1}>
-            {firstname}
+            {user?.userName ?? "Utilisateur"}
           </Typography>
 
           <Typography fontSize={13} color="rgba(255,255,255,0.7)">
-            Mon compte Collector
+            {user?.email}
           </Typography>
         </Box>
 
         <Box sx={{ flexGrow: 1, p: 2 }}>
           <List>
-            {menuItems.map((item) => (
-              <ListItemButton
-                key={item.label}
-                onClick={() => {
-                  setSelected(item.label);
-                  window.location.href = item.path;
-                }}
-                sx={{
-                  borderRadius: 2,
-                  mb: 0.5,
-                  backgroundColor:
-                    selected === item.label
-                      ? "rgba(0, 71, 255, 0.12)"
-                      : "transparent",
-                  "&:hover": { backgroundColor: "rgba(0, 71, 255, 0.18)" },
-                }}
-              >
-                <ListItemIcon
+            {menuItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <ListItemButton
+                  key={item.label}
+                  onClick={() => navigate(item.path)}
                   sx={{
-                    color: selected === item.label ? "#0047FF" : "#222",
-                    minWidth: 34,
+                    borderRadius: 2,
+                    mb: 0.5,
+                    backgroundColor: isActive
+                      ? "rgba(0, 71, 255, 0.15)"
+                      : "transparent",
+                    "&:hover": {
+                      backgroundColor: "rgba(0, 71, 255, 0.22)",
+                    },
                   }}
                 >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{
-                    fontWeight: selected === item.label ? 700 : 500,
-                    color: selected === item.label ? "#0047FF" : "#222",
-                  }}
-                />
-              </ListItemButton>
-            ))}
+                  <ListItemIcon
+                    sx={{
+                      color: isActive ? "#0047FF" : "#222",
+                      minWidth: 34,
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{
+                      fontWeight: isActive ? 700 : 500,
+                      color: isActive ? "#0047FF" : "#222",
+                    }}
+                  />
+                </ListItemButton>
+              );
+            })}
 
             <Divider sx={{ my: 2 }} />
 
             <ListItemButton
-              onClick={() => {
-                localStorage.clear();
-                window.location.reload();
-              }}
+              onClick={logout}
               sx={{
                 borderRadius: 2,
                 "&:hover": { backgroundColor: "rgba(255, 0, 0, 0.12)" },
