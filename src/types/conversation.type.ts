@@ -18,4 +18,6 @@ export interface Conversation {
   articleImage?: string;
   articlePrice?: number;
   shopName?: string;
+  hasUnread?: boolean;
+  lastMessageAt?: string;
 }

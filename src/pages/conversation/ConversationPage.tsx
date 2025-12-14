@@ -20,6 +20,7 @@ import { getArticleById } from "../../services/articles.api";
 import {
   getMyConversations,
   loadMessages,
+  markConversationAsRead,
   sendFirstMessage,
   sendMessage,
 } from "../../services/conversation.api";
@@ -36,12 +37,12 @@ import type { Shop } from "../../types/shop.type";
 
 type ConversationMessageWithRelation = ConversationMessage & {
   conversationId?: string;
-  conversation?: { id: string };
+  conversation?: { id: string } | string;
 };
 
 type ConversationWithUI = Conversation & {
   hasUnread?: boolean;
-  lastMessageAt?: number;
+  lastMessageAt?: string | null;
 };
 
 export default function ConversationPage() {
@@ -77,48 +78,65 @@ export default function ConversationPage() {
     socketRef.current = io("http://localhost:4000", {
       transports: ["websocket"],
     });
+    socketRef.current.on("connect", () => {});
 
     socketRef.current.on(
       "newMessage",
       (msg: ConversationMessageWithRelation) => {
-        const msgConversationId =
-          msg.conversationId ?? msg.conversation?.id ?? null;
-
+        const openedConvId = currentConversationIdRef.current;
+        const msgConversationId: string | null =
+          msg.conversationId ??
+          (typeof msg.conversation === "string"
+            ? msg.conversation
+            : msg.conversation?.id) ??
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (msg as any).conversation_id ??
+          null;
         setMessages((prev) => {
-          if (!currentConversationIdRef.current) return prev;
-
-          if (
-            !msgConversationId ||
-            msgConversationId !== currentConversationIdRef.current
-          ) {
+          if (!openedConvId) {
             return prev;
           }
 
-          if (prev.some((m) => m.id === msg.id)) return prev;
-          return [...prev, msg];
+          if (msgConversationId && msgConversationId !== openedConvId) {
+            return prev;
+          }
+
+          if (prev.some((m) => m.id === msg.id)) {
+            return prev;
+          }
+
+          const next = [...prev, msg];
+          return next;
         });
 
-        if (!msgConversationId) return;
+        if (!msgConversationId) {
+          return;
+        }
 
         setConversations((prev) => {
-          const now = Date.now();
+          if (prev.length === 0) return prev;
 
-          const updated = prev.map((c) =>
-            c.id === msgConversationId
-              ? {
-                  ...c,
-                  hasUnread: c.id !== currentConversationIdRef.current,
-                  lastMessageAt: now,
-                }
-              : c
-          );
+          const nowIso = new Date().toISOString();
 
-          return [...updated].sort(
-            (a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0)
-          );
+          const updated = prev.map((c) => {
+            if (c.id !== msgConversationId) return c;
+            return {
+              ...c,
+              hasUnread: true,
+              lastMessageAt: nowIso,
+            };
+          });
+
+          const sorted = [...updated].sort((a, b) => {
+            const aTime = a.lastMessageAt ? Date.parse(a.lastMessageAt) : 0;
+            const bTime = b.lastMessageAt ? Date.parse(b.lastMessageAt) : 0;
+            return bTime - aTime;
+          });
+          return sorted;
         });
       }
     );
+    socketRef.current.on("disconnect", () => {});
 
     return () => {
       socketRef.current?.disconnect();
@@ -131,12 +149,15 @@ export default function ConversationPage() {
   }, [currentConversation]);
 
   useEffect(() => {
-    if (currentConversation && socketRef.current) {
-      socketRef.current.emit("joinConversation", {
-        conversationId: currentConversation.id,
+    if (!socketRef.current) return;
+    if (conversations.length === 0) return;
+
+    conversations.forEach((c) => {
+      socketRef.current?.emit("joinConversation", {
+        conversationId: c.id,
       });
-    }
-  }, [currentConversation]);
+    });
+  }, [conversations]);
 
   useEffect(() => {
     async function init() {
@@ -144,34 +165,42 @@ export default function ConversationPage() {
         setLoading(true);
 
         const allConvs = await getMyConversations();
-
-        const allConvsWithUI: ConversationWithUI[] = allConvs.map((c) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const allConvsWithUI: ConversationWithUI[] = allConvs.map((c: any) => ({
           ...c,
-          hasUnread: false,
-          lastMessageAt: 0,
+          hasUnread: !!(c.hasUnread || c.unreadCount > 0),
+          lastMessageAt: c.lastMessageAt ?? null,
         }));
-
         setConversations(allConvsWithUI);
 
-        if (articleId) setArticle(await getArticleById(articleId));
-        if (shopId) setShop(await getShopById(shopId));
+        let initialConv: ConversationWithUI | null = null;
 
         if (articleId) {
-          const existing = allConvsWithUI.find(
-            (c) => c.articleId === articleId
-          );
-          if (existing) {
-            setCurrentConversation(existing);
-            setMessages(await loadMessages(existing.id));
-          }
+          initialConv =
+            allConvsWithUI.find((c) => c.articleId === articleId) ?? null;
         }
 
-        if (!articleId && allConvsWithUI.length > 0) {
-          const firstConv = allConvsWithUI[0];
-          setCurrentConversation(firstConv);
-          setMessages(await loadMessages(firstConv.id));
-          setArticle(await getArticleById(firstConv.articleId));
-          setShop(await getShopById(firstConv.shopId));
+        if (!initialConv && allConvsWithUI.length > 0) {
+          initialConv = allConvsWithUI[0];
+        }
+
+        if (initialConv) {
+          setCurrentConversation(initialConv);
+
+          const convMessages = await loadMessages(initialConv.id);
+          setMessages(convMessages);
+
+          const art = await getArticleById(initialConv.articleId);
+          const shp = await getShopById(initialConv.shopId);
+          setArticle(art);
+          setShop(shp);
+        } else {
+          if (articleId) {
+            setArticle(await getArticleById(articleId));
+          }
+          if (shopId) {
+            setShop(await getShopById(shopId));
+          }
         }
 
         const titles: Record<string, string> = {};
@@ -184,6 +213,8 @@ export default function ConversationPage() {
           })
         );
         setArticleTitlesById(titles);
+      } catch (e) {
+        console.error("Erreur pendant l'init:", e);
       } finally {
         setLoading(false);
       }
@@ -210,17 +241,42 @@ export default function ConversationPage() {
       const newConv: ConversationWithUI = {
         ...firstMsg.conversation,
         hasUnread: false,
-        lastMessageAt: Date.now(),
+        lastMessageAt: new Date().toISOString(),
       };
 
       setCurrentConversation(newConv);
-      setConversations((prev) => [newConv, ...prev]);
+      setConversations((prev) => {
+        const next = [newConv, ...prev];
+        return next;
+      });
+
+      try {
+        setArticle(await getArticleById(newConv.articleId));
+        setShop(await getShopById(newConv.shopId));
+      } catch (e) {
+        console.error("Erreur chargement article/shop après création conv:", e);
+      }
+
       setContent("");
       return;
     }
 
     if (currentConversation) {
       await sendMessage(currentConversation.id, content);
+
+      setConversations((prev) => {
+        const next = prev.map((c) =>
+          c.id === currentConversation.id
+            ? {
+                ...c,
+                hasUnread: false,
+                lastMessageAt: new Date().toISOString(),
+              }
+            : c
+        );
+        return next;
+      });
+
       setContent("");
     }
   }
@@ -255,15 +311,26 @@ export default function ConversationPage() {
               key={c.id}
               onClick={async () => {
                 setCurrentConversation(c);
-                setMessages(await loadMessages(c.id));
-                setArticle(await getArticleById(c.articleId));
-                setShop(await getShopById(c.shopId));
+                const convMessages = await loadMessages(c.id);
+                setMessages(convMessages);
 
-                setConversations((prev) =>
-                  prev.map((conv) =>
+                const art = await getArticleById(c.articleId);
+                const shp = await getShopById(c.shopId);
+                setArticle(art);
+                setShop(shp);
+
+                try {
+                  await markConversationAsRead(c.id);
+                } catch (e) {
+                  console.error("Erreur:", e);
+                }
+
+                setConversations((prev) => {
+                  const next = prev.map((conv) =>
                     conv.id === c.id ? { ...conv, hasUnread: false } : conv
-                  )
-                );
+                  );
+                  return next;
+                });
               }}
               sx={{
                 p: 1.2,
@@ -285,14 +352,11 @@ export default function ConversationPage() {
                 fontSize={14}
                 color={c.hasUnread ? "#1E4FFF" : "inherit"}
               >
-                Article :{" "}
-                {articleTitlesById[c.articleId] ??
-                  (articleId && articleTitlesById[articleId]) ??
-                  "…"}
+                Article : {articleTitlesById[c.articleId] ?? "…"}
               </Typography>
 
               <Typography fontSize={12} color="gray">
-                ID : {c.articleId}
+                Conversation ID : {c.id}
               </Typography>
 
               {c.hasUnread && (
