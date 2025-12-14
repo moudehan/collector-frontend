@@ -176,6 +176,15 @@ export default function ArticleDetailPageBuyer() {
                 variant="outlined"
                 sx={{ border: 1, mb: 2 }}
                 color="green"
+                onClick={() => {
+                  navigate("/conversations", {
+                    state: {
+                      articleId: article.id,
+                      shopId: shop.id,
+                      sellerId: shop.owner.id,
+                    },
+                  });
+                }}
               />
 
               <AnimatedButton

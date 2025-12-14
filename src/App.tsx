@@ -4,6 +4,7 @@ import { AuthProvider } from "./contexte/AuthProvider";
 import ArticleAddPage from "./pages/article/ArticleAddPage";
 import ArticleDetailPage from "./pages/article/ArticleDetailPage";
 import ArticleDetailPageBuyer from "./pages/article/ArticleDetailPageBuyer";
+import ConversationPage from "./pages/conversation/ConversationPage";
 import Home from "./pages/Home";
 import NotificationsPage from "./pages/notifications/NotificationsPage";
 import ShopDetailPage from "./pages/shop/ShopDetailPage";
@@ -116,6 +117,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <NotificationsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/conversations"
+              element={
+                <ProtectedRoute>
+                  <ConversationPage />
                 </ProtectedRoute>
               }
             />

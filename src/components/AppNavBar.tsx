@@ -22,6 +22,7 @@ import AnimatedButton from "./Button";
 import type { Item } from "./DropDownList";
 import DropdownList from "./DropDownList";
 
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import {
   getUserNotifications,
   markAllNotificationsAsRead,
@@ -156,6 +157,13 @@ export default function AppNavbar() {
                   <Badge badgeContent={unreadCount} color="error">
                     <NotificationsIcon />
                   </Badge>
+                </IconButton>
+
+                <IconButton
+                  onClick={() => navigate("/conversations")}
+                  title="Mes conversations"
+                >
+                  <ChatBubbleOutlineIcon />
                 </IconButton>
 
                 <DropdownList
