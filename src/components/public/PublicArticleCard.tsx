@@ -1,59 +1,23 @@
-import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import StarIcon from "@mui/icons-material/Star";
 import { Box, Card, Typography } from "@mui/material";
-import { useEffect, useState } from "react";
 import { API_URL } from "../../config";
-import { followArticle, unfollowArticle } from "../../services/articles.api";
 import type { Article } from "../../types/article.type";
 
-interface BuyerArticleCardProps {
+interface PublicArticlesCardProps {
   article: Article;
   onClick: () => void;
+  onRequireAuth: () => void;
 }
 
-export default function BuyerArticleCard({
+export default function PublicArticlesCard({
   article,
   onClick,
-}: BuyerArticleCardProps) {
-  const [isFavorite, setIsFavorite] = useState<boolean>(!!article.isFavorite);
-  const [likesCount, setLikesCount] = useState<number>(article.likesCount ?? 0);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setIsFavorite(!!article.isFavorite);
-    setLikesCount(article.likesCount ?? 0);
-  }, [article]);
-
-  const rawUrl = article.images?.[0]?.url;
-  const imageUrl = rawUrl
-    ? rawUrl.startsWith("http")
-      ? rawUrl
-      : `${API_URL}${rawUrl}`
-    : "/placeholder.png";
-
-  async function handleToggleFavorite(e: React.MouseEvent<HTMLDivElement>) {
-    e.stopPropagation();
-    if (loading) return;
-
-    setLoading(true);
-
-    try {
-      if (isFavorite) {
-        await unfollowArticle(article.id);
-        setIsFavorite(false);
-        setLikesCount((prev) => prev - 1);
-      } else {
-        await followArticle(article.id);
-        setIsFavorite(true);
-        setLikesCount((prev) => prev + 1);
-      }
-    } catch (error) {
-      console.error("Erreur toggle favoris :", error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  onRequireAuth,
+}: PublicArticlesCardProps) {
+  const imageUrl = article.images?.[0]?.url?.startsWith("http")
+    ? article.images[0].url
+    : `${API_URL}${article.images?.[0]?.url || ""}`;
 
   return (
     <Card
@@ -61,12 +25,11 @@ export default function BuyerArticleCard({
         width: 250,
         cursor: "pointer",
         overflow: "hidden",
-        background: "transparent",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.10)",
         borderRadius: 2,
-        position: "relative",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.10)",
         display: "flex",
         flexDirection: "column",
+        position: "relative",
         transition: "0.22s",
         "&:hover": {
           transform: "translateY(-4px)",
@@ -80,28 +43,25 @@ export default function BuyerArticleCard({
           position: "absolute",
           top: 10,
           right: 10,
+          zIndex: 3,
           width: 34,
           height: 34,
           borderRadius: "50%",
           background: "#fff",
           display: "flex",
-          alignItems: "center",
           justifyContent: "center",
-          zIndex: 3,
+          alignItems: "center",
           boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-          cursor: loading ? "not-allowed" : "pointer",
-          opacity: loading ? 0.5 : 1,
+          cursor: "pointer",
         }}
-        onClick={handleToggleFavorite}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRequireAuth();
+        }}
       >
-        {isFavorite ? (
-          <FavoriteIcon sx={{ color: "#FF4F74" }} />
-        ) : (
-          <FavoriteBorderIcon sx={{ color: "#444" }} />
-        )}
+        <FavoriteBorderIcon sx={{ color: "#444" }} />
       </Box>
 
-      {/* IMAGE */}
       <Box
         sx={{
           height: 160,
@@ -111,7 +71,7 @@ export default function BuyerArticleCard({
         }}
       />
 
-      <Box sx={{ p: 1.3, display: "flex", flexDirection: "column", gap: 0.7 }}>
+      <Box sx={{ p: 1.3, display: "flex", flexDirection: "column", gap: 0.6 }}>
         <Typography
           fontWeight={700}
           fontSize={15}
@@ -141,18 +101,11 @@ export default function BuyerArticleCard({
           {article.price} €
         </Typography>
 
-        {article?.shipping_cost && (
+        {article.shipping_cost && (
           <Typography fontSize={11} color="gray">
             Livraison : {article.shipping_cost} €
           </Typography>
         )}
-
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.4, mt: 0.3 }}>
-          <StarIcon sx={{ fontSize: 15, color: "#FFC107" }} />
-          <Typography fontSize={12}>
-            {article.avgRating} ({article.ratingsCount})
-          </Typography>
-        </Box>
 
         {article.shop && (
           <Box sx={{ mt: 0.5 }}>
@@ -172,15 +125,24 @@ export default function BuyerArticleCard({
             >
               {article.shop.description}
             </Typography>
-          </Box>
-        )}
 
-        {likesCount > 0 && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <FavoriteBorderIcon sx={{ fontSize: 14, color: "#ff4f74" }} />
-            <Typography fontSize={12} color="gray">
-              {likesCount}
-            </Typography>
+            <Box
+              sx={{ display: "flex", alignItems: "center", gap: 0.4, mt: 0.3 }}
+            >
+              <StarIcon sx={{ fontSize: 15, color: "#FFC107" }} />
+              <Typography fontSize={12}>
+                {article.shop.avgRating} ({article.shop.ratingsCount})
+              </Typography>
+            </Box>
+
+            {article.likesCount > 0 && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <FavoriteBorderIcon sx={{ fontSize: 14, color: "#ff4f74" }} />
+                <Typography fontSize={12} color="gray">
+                  {article.likesCount}
+                </Typography>
+              </Box>
+            )}
           </Box>
         )}
       </Box>

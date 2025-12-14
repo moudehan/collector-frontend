@@ -10,7 +10,7 @@ import {
 } from "../services/articles.api";
 import { fetchPublicCategories } from "../services/categories.api";
 
-import ArticleCardList from "../layout/ArticleCardList";
+import PublicArticlesCard from "../components/public/PublicArticleCard";
 import CategoryButtonList from "../layout/CategoryButtonList";
 import type { Article, Category } from "../types/article.type";
 import AuthModal from "./AuthModal";
@@ -65,6 +65,7 @@ export default function Home() {
           objets uniques.
         </Typography>
         <AnimatedButton
+          center
           label="S'inscrire"
           onClick={() => {
             setAuthMode("register");
@@ -77,7 +78,16 @@ export default function Home() {
           Derniers articles publiés
         </Typography>
 
-        <ArticleCardList articles={articles} />
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+          {articles.map((article) => (
+            <PublicArticlesCard
+              key={article.id}
+              article={article}
+              onRequireAuth={() => setOpenAuth(true)}
+              onClick={() => console.log("Go article", article.id)}
+            />
+          ))}
+        </Box>
       </Container>
       <Container sx={{ pb: 6 }}>
         <Box
@@ -113,7 +123,16 @@ export default function Home() {
             Articles : {selectedCategory.name}
           </Typography>
 
-          <ArticleCardList articles={categoryArticles} />
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+            {categoryArticles.map((article) => (
+              <PublicArticlesCard
+                key={article.id}
+                article={article}
+                onRequireAuth={() => setOpenAuth(true)}
+                onClick={() => console.log("Go article", article.id)}
+              />
+            ))}
+          </Box>
         </Container>
       )}
 

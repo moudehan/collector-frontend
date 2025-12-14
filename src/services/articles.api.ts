@@ -34,8 +34,31 @@ export async function fetchPrivateArticles() {
   }
 }
 
+export async function fetchPrivateArticlesByCategory(categoryId: string) {
+  const token = localStorage.getItem("UserToken");
+
+  if (!token) {
+    throw new Error("Aucun token trouvé — utilisateur non connecté");
+  }
+
+  const res = await fetch(`${API_URL}/articles?categoryId=${categoryId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Erreur lors du chargement des articles filtrés (privé)");
+  }
+
+  return res.json();
+}
+
 export async function fetchArticlesByCategory(categoryId: string) {
-  const res = await fetch(`${API_URL}/articles?categoryId=${categoryId}`);
+  const res = await fetch(
+    `${API_URL}/articles/public?categoryId=${categoryId}`
+  );
 
   if (!res.ok) {
     throw new Error("Erreur lors du chargement des articles filtrés");

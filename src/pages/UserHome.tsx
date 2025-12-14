@@ -5,13 +5,12 @@ import AnimatedButton from "../components/Button";
 import UserPageLayout from "../layout/UserPageLayout";
 
 import {
-  fetchArticlesByCategory,
   fetchPrivateArticles,
+  fetchPrivateArticlesByCategory,
 } from "../services/articles.api";
 import { fetchPublicCategories } from "../services/categories.api";
 
 import StorefrontIcon from "@mui/icons-material/Storefront";
-import ArticleCardList from "../layout/ArticleCardList";
 import CategoryButtonList from "../layout/CategoryButtonList";
 
 import { useLocation, useNavigate } from "react-router-dom";
@@ -51,7 +50,7 @@ export default function UserHome() {
   async function handleCategoryClick(cat: Category) {
     setSelectedCategory(cat);
     try {
-      const filtered = await fetchArticlesByCategory(cat.id);
+      const filtered = await fetchPrivateArticlesByCategory(cat.id);
       setCategoryArticles(filtered);
     } catch (e) {
       console.error(e);
@@ -148,12 +147,20 @@ export default function UserHome() {
         />
 
         {selectedCategory && (
-          <Container sx={{ pb: 12, mt: 6 }}>
+          <Container sx={{ pb: 12 }}>
             <Typography variant="h5" fontWeight={700} mb={3}>
               Articles : {selectedCategory.name}
             </Typography>
 
-            <ArticleCardList articles={categoryArticles} />
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+              {categoryArticles.map((article) => (
+                <BuyerArticleCard
+                  key={article.id}
+                  article={article}
+                  onClick={() => navigate(`/article/${article.id}`)}
+                />
+              ))}
+            </Box>
           </Container>
         )}
 
