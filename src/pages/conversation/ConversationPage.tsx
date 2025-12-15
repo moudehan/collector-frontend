@@ -21,6 +21,7 @@ import {
   getMyConversations,
   loadMessages,
   markConversationAsRead,
+  markConversationAsUnread,
   sendFirstMessage,
   sendMessage,
 } from "../../services/conversation.api";
@@ -28,6 +29,7 @@ import { getShopById } from "../../services/shop.api";
 
 import { useAuth } from "../../contexte/UseAuth";
 
+import { setUnreadCount } from "../../store/conversationUnreadStore";
 import type { Article } from "../../types/article.type";
 import type {
   Conversation,
@@ -92,21 +94,18 @@ export default function ConversationPage() {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (msg as any).conversation_id ??
           null;
-        setMessages((prev) => {
-          if (!openedConvId) {
-            return prev;
-          }
 
+        const isMine = msg.senderId === user?.id;
+
+        setMessages((prev) => {
+          if (!openedConvId) return prev;
           if (msgConversationId && msgConversationId !== openedConvId) {
             return prev;
           }
-
           if (prev.some((m) => m.id === msg.id)) {
             return prev;
           }
-
-          const next = [...prev, msg];
-          return next;
+          return [...prev, msg];
         });
 
         if (!msgConversationId) {
@@ -120,9 +119,17 @@ export default function ConversationPage() {
 
           const updated = prev.map((c) => {
             if (c.id !== msgConversationId) return c;
+
+            if (!isMine) {
+              return {
+                ...c,
+                hasUnread: true,
+                lastMessageAt: nowIso,
+              };
+            }
+
             return {
               ...c,
-              hasUnread: true,
               lastMessageAt: nowIso,
             };
           });
@@ -132,8 +139,17 @@ export default function ConversationPage() {
             const bTime = b.lastMessageAt ? Date.parse(b.lastMessageAt) : 0;
             return bTime - aTime;
           });
+          const unread = sorted.filter((c) => c.hasUnread).length;
+          setUnreadCount(unread);
+
           return sorted;
         });
+
+        if (!isMine && msgConversationId) {
+          markConversationAsUnread(msgConversationId).catch((e) => {
+            console.error("Erreur markConversationAsUnread:", e);
+          });
+        }
       }
     );
     socketRef.current.on("disconnect", () => {});
@@ -142,7 +158,7 @@ export default function ConversationPage() {
       socketRef.current?.disconnect();
       socketRef.current = null;
     };
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     currentConversationIdRef.current = currentConversation?.id ?? null;
@@ -172,6 +188,8 @@ export default function ConversationPage() {
           lastMessageAt: c.lastMessageAt ?? null,
         }));
         setConversations(allConvsWithUI);
+        const initialUnread = allConvsWithUI.filter((c) => c.hasUnread).length;
+        setUnreadCount(initialUnread);
 
         let initialConv: ConversationWithUI | null = null;
 
@@ -247,6 +265,9 @@ export default function ConversationPage() {
       setCurrentConversation(newConv);
       setConversations((prev) => {
         const next = [newConv, ...prev];
+        const unread = next.filter((c) => c.hasUnread).length;
+        setUnreadCount(unread);
+
         return next;
       });
 
@@ -274,6 +295,10 @@ export default function ConversationPage() {
               }
             : c
         );
+
+        const unread = next.filter((c) => c.hasUnread).length;
+        setUnreadCount(unread);
+
         return next;
       });
 
@@ -322,13 +347,16 @@ export default function ConversationPage() {
                 try {
                   await markConversationAsRead(c.id);
                 } catch (e) {
-                  console.error("Erreur:", e);
+                  console.error("Erreur markConversationAsRead:", e);
                 }
 
                 setConversations((prev) => {
                   const next = prev.map((conv) =>
                     conv.id === c.id ? { ...conv, hasUnread: false } : conv
                   );
+                  const unread = next.filter((conv) => conv.hasUnread).length;
+                  setUnreadCount(unread);
+
                   return next;
                 });
               }}

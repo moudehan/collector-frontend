@@ -32,6 +32,10 @@ import {
 
 import { useAuth } from "../contexte/UseAuth";
 import { useArticleNotifications } from "../services/socket";
+import {
+  resetUnread,
+  subscribeToUnread,
+} from "../store/conversationUnreadStore";
 
 export default function AppNavbar() {
   const navigate = useNavigate();
@@ -45,6 +49,26 @@ export default function AppNavbar() {
   const [notifAnchor, setNotifAnchor] = useState<HTMLElement | null>(null);
   const [visibleCount, setVisibleCount] = useState(10);
   const [notifications, setNotifications] = useState<Item[]>([]);
+
+  const [unreadConversationsCount, setUnreadConversationsCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const unsubscribe = subscribeToUnread((count) => {
+      setUnreadConversationsCount(count);
+    });
+
+    return unsubscribe;
+  }, [user, user?.id]);
+
+  useEffect(() => {
+    if (!user) {
+      resetUnread();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -107,7 +131,9 @@ export default function AppNavbar() {
     });
   });
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const unreadNotifCount = notifications.filter((n) => !n.is_read).length;
+  const displayUnreadConversations = user ? unreadConversationsCount : 0;
+
   if (loading) return null;
 
   return (
@@ -154,7 +180,7 @@ export default function AppNavbar() {
             {user && (
               <>
                 <IconButton onClick={(e) => setNotifAnchor(e.currentTarget)}>
-                  <Badge badgeContent={unreadCount} color="error">
+                  <Badge badgeContent={unreadNotifCount} color="error">
                     <NotificationsIcon />
                   </Badge>
                 </IconButton>
@@ -163,7 +189,12 @@ export default function AppNavbar() {
                   onClick={() => navigate("/conversations")}
                   title="Mes conversations"
                 >
-                  <ChatBubbleOutlineIcon />
+                  <Badge
+                    badgeContent={displayUnreadConversations}
+                    color="error"
+                  >
+                    <ChatBubbleOutlineIcon />
+                  </Badge>
                 </IconButton>
 
                 <DropdownList

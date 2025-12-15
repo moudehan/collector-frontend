@@ -107,3 +107,32 @@ export async function getConversationById(conversationId: string) {
   if (!res.ok) throw new Error("Erreur chargement conversation");
   return res.json();
 }
+export async function markConversationAsRead(
+  conversationId: string
+): Promise<void> {
+  const token = localStorage.getItem("UserToken");
+
+  const res = await fetch(`${API_URL}/conversations/${conversationId}/read`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Erreur markConversationAsRead");
+}
+
+export async function markConversationAsUnread(
+  conversationId: string
+): Promise<void> {
+  const token = localStorage.getItem("UserToken");
+
+  const res = await fetch(`${API_URL}/conversations/${conversationId}/unread`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Erreur markConversationAsUnread");
+}
