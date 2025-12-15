@@ -27,9 +27,10 @@ import {
 } from "../../services/conversation.api";
 import { getShopById } from "../../services/shop.api";
 
+import { useConversationUnread } from "../../contexte/ConversationUnreadContext";
 import { useAuth } from "../../contexte/UseAuth";
 
-import { setUnreadCount } from "../../store/conversationUnreadStore";
+import { API_URL } from "../../config";
 import type { Article } from "../../types/article.type";
 import type {
   Conversation,
@@ -61,6 +62,7 @@ export default function ConversationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const { user } = useAuth();
+  const { refreshUnread } = useConversationUnread();
 
   const [conversations, setConversations] = useState<ConversationWithUI[]>([]);
   const [currentConversation, setCurrentConversation] =
@@ -77,7 +79,7 @@ export default function ConversationPage() {
   const currentConversationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    socketRef.current = io("http://localhost:4000", {
+    socketRef.current = io(API_URL, {
       transports: ["websocket"],
     });
     socketRef.current.on("connect", () => {});
@@ -139,8 +141,6 @@ export default function ConversationPage() {
             const bTime = b.lastMessageAt ? Date.parse(b.lastMessageAt) : 0;
             return bTime - aTime;
           });
-          const unread = sorted.filter((c) => c.hasUnread).length;
-          setUnreadCount(unread);
 
           return sorted;
         });
@@ -188,8 +188,6 @@ export default function ConversationPage() {
           lastMessageAt: c.lastMessageAt ?? null,
         }));
         setConversations(allConvsWithUI);
-        const initialUnread = allConvsWithUI.filter((c) => c.hasUnread).length;
-        setUnreadCount(initialUnread);
 
         let initialConv: ConversationWithUI | null = null;
 
@@ -263,13 +261,7 @@ export default function ConversationPage() {
       };
 
       setCurrentConversation(newConv);
-      setConversations((prev) => {
-        const next = [newConv, ...prev];
-        const unread = next.filter((c) => c.hasUnread).length;
-        setUnreadCount(unread);
-
-        return next;
-      });
+      setConversations((prev) => [newConv, ...prev]);
 
       try {
         setArticle(await getArticleById(newConv.articleId));
@@ -285,8 +277,8 @@ export default function ConversationPage() {
     if (currentConversation) {
       await sendMessage(currentConversation.id, content);
 
-      setConversations((prev) => {
-        const next = prev.map((c) =>
+      setConversations((prev) =>
+        prev.map((c) =>
           c.id === currentConversation.id
             ? {
                 ...c,
@@ -294,13 +286,8 @@ export default function ConversationPage() {
                 lastMessageAt: new Date().toISOString(),
               }
             : c
-        );
-
-        const unread = next.filter((c) => c.hasUnread).length;
-        setUnreadCount(unread);
-
-        return next;
-      });
+        )
+      );
 
       setContent("");
     }
@@ -350,15 +337,15 @@ export default function ConversationPage() {
                   console.error("Erreur markConversationAsRead:", e);
                 }
 
-                setConversations((prev) => {
-                  const next = prev.map((conv) =>
+                setConversations((prev) =>
+                  prev.map((conv) =>
                     conv.id === c.id ? { ...conv, hasUnread: false } : conv
-                  );
-                  const unread = next.filter((conv) => conv.hasUnread).length;
-                  setUnreadCount(unread);
+                  )
+                );
 
-                  return next;
-                });
+                refreshUnread().catch((e) =>
+                  console.error("Erreur refreshUnread:", e)
+                );
               }}
               sx={{
                 p: 1.2,
@@ -458,15 +445,27 @@ export default function ConversationPage() {
           </Box>
 
           <Box sx={{ display: "flex", mt: 2 }}>
-            <TextField
-              fullWidth
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Écrire un message…"
-            />
-            <IconButton onClick={handleSend}>
-              <SendIcon />
-            </IconButton>
+            <Box sx={{ display: "flex", mt: 2 }}>
+              <TextField
+                fullWidth
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Écrire un message…"
+              />
+              <IconButton
+                onClick={handleSend}
+                disableRipple
+                disableFocusRipple
+                sx={{
+                  ml: 1,
+                  "&:focus": { outline: "none" },
+                  "&:focus-visible": { outline: "none" },
+                  "&:active": { outline: "none", boxShadow: "none" },
+                }}
+              >
+                <SendIcon />
+              </IconButton>
+            </Box>
           </Box>
         </Card>
 

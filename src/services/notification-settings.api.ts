@@ -1,7 +1,5 @@
 import axios from "axios";
-
-const API_URL = "http://localhost:4000";
-
+import { API_URL } from "../config";
 export type NotificationSettings = {
   NEW_ARTICLE: boolean;
   ARTICLE_UPDATED: boolean;

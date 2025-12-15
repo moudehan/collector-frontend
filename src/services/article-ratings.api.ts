@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const API_URL = "http://localhost:4000";
+import { API_URL } from "../config";
 
 export async function rateArticle(articleId: string, value: number) {
   const res = await axios.post(

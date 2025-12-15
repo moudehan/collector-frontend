@@ -30,16 +30,14 @@ import {
   markNotificationAsRead,
 } from "../services/notifications.api";
 
+import { useConversationUnread } from "../contexte/ConversationUnreadContext";
 import { useAuth } from "../contexte/UseAuth";
 import { useArticleNotifications } from "../services/socket";
-import {
-  resetUnread,
-  subscribeToUnread,
-} from "../store/conversationUnreadStore";
 
 export default function AppNavbar() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const { unreadCount: unreadConversationsCount } = useConversationUnread();
 
   const [openAuth, setOpenAuth] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -50,34 +48,16 @@ export default function AppNavbar() {
   const [visibleCount, setVisibleCount] = useState(10);
   const [notifications, setNotifications] = useState<Item[]>([]);
 
-  const [unreadConversationsCount, setUnreadConversationsCount] = useState(0);
-
   useEffect(() => {
     if (!user) {
       return;
     }
 
-    const unsubscribe = subscribeToUnread((count) => {
-      setUnreadConversationsCount(count);
-    });
-
-    return unsubscribe;
-  }, [user, user?.id]);
-
-  useEffect(() => {
-    if (!user) {
-      resetUnread();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-
     (async () => {
       const data = await getUserNotifications();
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const formatted = data.map((n: any) => ({
+      const formatted: Item[] = data.map((n: any) => ({
         id: n.id,
         title:
           n.type === "NEW_ARTICLE"
@@ -94,17 +74,7 @@ export default function AppNavbar() {
         type: n.type,
       }));
 
-      setNotifications((prev) => {
-        const merged = [...formatted];
-
-        prev.forEach((oldNotif) => {
-          if (!merged.some((n) => n.id === oldNotif.id)) {
-            merged.push(oldNotif);
-          }
-        });
-
-        return merged;
-      });
+      setNotifications(formatted);
     })();
   }, [user]);
 
@@ -132,7 +102,6 @@ export default function AppNavbar() {
   });
 
   const unreadNotifCount = notifications.filter((n) => !n.is_read).length;
-  const displayUnreadConversations = user ? unreadConversationsCount : 0;
 
   if (loading) return null;
 
@@ -189,10 +158,7 @@ export default function AppNavbar() {
                   onClick={() => navigate("/conversations")}
                   title="Mes conversations"
                 >
-                  <Badge
-                    badgeContent={displayUnreadConversations}
-                    color="error"
-                  >
+                  <Badge badgeContent={unreadConversationsCount} color="error">
                     <ChatBubbleOutlineIcon />
                   </Badge>
                 </IconButton>
@@ -242,11 +208,9 @@ export default function AppNavbar() {
             <FavoriteBorderIcon />
             <LanguageIcon />
             {user && (
-              <>
-                <IconButton onClick={toggleDrawer}>
-                  <Avatar>{user.userName?.[0]?.toUpperCase() ?? "U"}</Avatar>
-                </IconButton>
-              </>
+              <IconButton onClick={toggleDrawer}>
+                <Avatar>{user.userName?.[0]?.toUpperCase() ?? "U"}</Avatar>
+              </IconButton>
             )}
             {!user && (
               <AnimatedButton

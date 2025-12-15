@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { io } from "socket.io-client";
+import { API_URL } from "../config";
 
 export interface LiveNotification {
   id: string;
@@ -15,7 +16,7 @@ export function useArticleNotifications(
   onNotif: (notif: LiveNotification) => void
 ) {
   useEffect(() => {
-    const socket = io("http://localhost:4000", {
+    const socket = io(API_URL, {
       transports: ["websocket"],
       auth: {
         token: localStorage.getItem("UserToken"),
