@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
+import keycloak from "../../keycloak";
 import { logoutApi } from "../services/auth.api";
-import { getMe } from "../services/users.api";
 import type { User } from "../types/user.type";
 import { AuthContext } from "./auth.contexte";
 
@@ -9,29 +9,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  async function refreshUser() {
-    const token = localStorage.getItem("UserToken");
+  function buildUserFromToken() {
+    const parsed = keycloak.tokenParsed as Record<string, unknown> | undefined;
 
-    if (!token) {
+    if (!parsed) {
       setUser(null);
       return;
     }
 
-    try {
-      const me = await getMe();
-      setUser(me);
-    } catch {
-      localStorage.removeItem("UserToken");
-      setUser(null);
-    }
+    const mapped: Partial<User> = {
+      id: (parsed.sub as string) ?? "",
+      email: (parsed.email as string) ?? "",
+      userName:
+        (parsed.preferred_username as string) || (parsed.name as string) || "",
+    };
+
+    setUser(mapped as User);
   }
 
   useEffect(() => {
+    let isMounted = true;
     (async () => {
       setLoading(true);
-      await refreshUser();
-      setLoading(false);
+
+      try {
+        const authenticated = await keycloak.init({
+          onLoad: "check-sso",
+          checkLoginIframe: false,
+        });
+
+        if (!isMounted) return;
+
+        if (authenticated && keycloak.token) {
+          localStorage.setItem("UserToken", keycloak.token);
+          buildUserFromToken();
+          if (window.location.pathname === "/") {
+            window.location.replace("/Home");
+          }
+        } else {
+          localStorage.removeItem("UserToken");
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("Erreur init Keycloak", err);
+        localStorage.removeItem("UserToken");
+        setUser(null);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     })();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   async function logout() {
@@ -42,11 +74,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await logoutApi();
     } finally {
       setUser(null);
+      localStorage.removeItem("UserToken");
       setLoading(false);
 
-      window.location.replace("/");
+      try {
+        await keycloak.logout({
+          redirectUri: window.location.origin + "/",
+        });
+      } catch (err) {
+        console.error("Erreur logout Keycloak", err);
+        window.location.replace("/");
+      }
 
       setTimeout(() => setIsLoggingOut(false), 500);
+    }
+  }
+
+  async function refreshUser() {
+    if (keycloak.authenticated && keycloak.token) {
+      localStorage.setItem("UserToken", keycloak.token);
+      buildUserFromToken();
+    } else {
+      setUser(null);
+      localStorage.removeItem("UserToken");
     }
   }
 

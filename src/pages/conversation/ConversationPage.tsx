@@ -303,6 +303,8 @@ export default function ConversationPage() {
 
   const isOwner = article && user && article.seller.id === user.id;
 
+  const imageUrl = `${API_URL}${article?.images[0].url}`;
+
   return (
     <UserPageLayout>
       <Box
@@ -486,11 +488,11 @@ export default function ConversationPage() {
               </Typography>
 
               {article.images?.[0] && (
-                <Box
+                <Card
                   sx={{
                     height: 180,
                     borderRadius: 2,
-                    backgroundImage: `url(${article.images[0]})`,
+                    backgroundImage: `url(${imageUrl})`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}

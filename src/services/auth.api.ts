@@ -1,3 +1,4 @@
+import keycloak from "../../keycloak";
 import { API_URL } from "../config";
 
 export async function registerUser(
@@ -19,23 +20,11 @@ export async function registerUser(
   return data;
 }
 
-export async function login(email: string, password: string) {
-  const res = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      origin: API_URL,
-    },
-    body: JSON.stringify({ email, password }),
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function login(_email: string, _password: string) {
+  await keycloak.login({
+    redirectUri: window.location.origin + "/Home",
   });
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(data.message || "Identifiants incorrects");
-  }
-
-  return data;
 }
 
 export async function logoutApi() {
@@ -43,7 +32,7 @@ export async function logoutApi() {
 
   try {
     if (token) {
-      await fetch(`${API_URL}/auth/logout`, {
+      await fetch(`${API_URL}/auth/logout-keycloak`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });

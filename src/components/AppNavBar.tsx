@@ -17,7 +17,6 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import UserMenuDrawer from "../layout/UserMenuDrawer";
-import AuthModal from "../pages/AuthModal";
 import AnimatedButton from "./Button";
 import type { Item } from "./DropDownList";
 import DropdownList from "./DropDownList";
@@ -30,6 +29,7 @@ import {
   markNotificationAsRead,
 } from "../services/notifications.api";
 
+import keycloak from "../../keycloak";
 import { useConversationUnread } from "../contexte/ConversationUnreadContext";
 import { useAuth } from "../contexte/UseAuth";
 import { useArticleNotifications } from "../services/socket";
@@ -39,8 +39,6 @@ export default function AppNavbar() {
   const { user, loading } = useAuth();
   const { unreadCount: unreadConversationsCount } = useConversationUnread();
 
-  const [openAuth, setOpenAuth] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [openDrawer, setOpenDrawer] = useState(false);
   const toggleDrawer = () => setOpenDrawer(!openDrawer);
 
@@ -125,6 +123,8 @@ export default function AppNavbar() {
             onClick={() => {
               if (user) {
                 navigate("/Home");
+              } else {
+                navigate("/");
               }
             }}
           >
@@ -219,8 +219,9 @@ export default function AppNavbar() {
                 sx={{ border: 1 }}
                 width="auto"
                 onClick={() => {
-                  setAuthMode("login");
-                  setOpenAuth(true);
+                  keycloak.login({
+                    redirectUri: window.location.origin + "/Home",
+                  });
                 }}
               />
             )}
@@ -228,12 +229,6 @@ export default function AppNavbar() {
         </Toolbar>
       </AppBar>
 
-      <AuthModal
-        open={openAuth}
-        onClose={() => setOpenAuth(false)}
-        mode={authMode}
-        setMode={setAuthMode}
-      />
       {user && <UserMenuDrawer open={openDrawer} onClose={toggleDrawer} />}
     </>
   );

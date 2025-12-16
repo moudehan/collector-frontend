@@ -1,6 +1,6 @@
 import type { JSX } from "react";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../contexte/UseAuth";
-import ErrorPage from "../pages/error/ErrorPage";
 
 export default function ProtectedRoute({
   children,
@@ -14,7 +14,7 @@ export default function ProtectedRoute({
   }
 
   if (!user) {
-    return <ErrorPage />;
+    return <Navigate to="/" replace />;
   }
 
   return children;

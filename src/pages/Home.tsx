@@ -10,15 +10,13 @@ import {
 } from "../services/articles.api";
 import { fetchPublicCategories } from "../services/categories.api";
 
+import keycloak from "../../keycloak";
 import PublicArticlesCard from "../components/public/PublicArticleCard";
 import CategoryButtonList from "../layout/CategoryButtonList";
 import type { Article, Category } from "../types/article.type";
-import AuthModal from "./AuthModal";
 
 export default function Home() {
   const [showAll, setShowAll] = useState(false);
-  const [openAuth, setOpenAuth] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -68,8 +66,9 @@ export default function Home() {
           center
           label="S'inscrire"
           onClick={() => {
-            setAuthMode("register");
-            setOpenAuth(true);
+            keycloak.register({
+              redirectUri: window.location.origin + "/Home",
+            });
           }}
         />
       </Container>
@@ -83,7 +82,11 @@ export default function Home() {
             <PublicArticlesCard
               key={article.id}
               article={article}
-              onRequireAuth={() => setOpenAuth(true)}
+              onRequireAuth={() =>
+                keycloak.login({
+                  redirectUri: window.location.origin + "/Home",
+                })
+              }
               onClick={() => console.log("Go article", article.id)}
             />
           ))}
@@ -128,20 +131,17 @@ export default function Home() {
               <PublicArticlesCard
                 key={article.id}
                 article={article}
-                onRequireAuth={() => setOpenAuth(true)}
+                onRequireAuth={() =>
+                  keycloak.login({
+                    redirectUri: window.location.origin + "/Home",
+                  })
+                }
                 onClick={() => console.log("Go article", article.id)}
               />
             ))}
           </Box>
         </Container>
       )}
-
-      <AuthModal
-        open={openAuth}
-        onClose={() => setOpenAuth(false)}
-        mode={authMode}
-        setMode={setAuthMode}
-      />
     </Box>
   );
 }
