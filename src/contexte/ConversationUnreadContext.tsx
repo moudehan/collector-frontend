@@ -60,11 +60,24 @@ export function ConversationUnreadProvider({
         socketRef.current.disconnect();
         socketRef.current = null;
       }
+      setUnreadCount(0);
+      return;
+    }
+
+    const token = localStorage.getItem("UserToken");
+
+    if (!token) {
+      console.warn(
+        "[UnreadContext] Aucun token trouvé alors qu'un user est présent"
+      );
       return;
     }
 
     const socket = io(API_URL, {
       transports: ["websocket"],
+      auth: {
+        token: `Bearer ${token}`,
+      },
     });
     socketRef.current = socket;
 
@@ -99,7 +112,8 @@ export function ConversationUnreadProvider({
 
       if (!convId) {
         console.warn(
-          "[UnreadContext] newMessage sans conversationId exploitable"
+          "[UnreadContext] newMessage sans conversationId exploitable",
+          msg
         );
         return;
       }
@@ -115,7 +129,9 @@ export function ConversationUnreadProvider({
 
     socket.on("newMessage", handleNewMessage);
 
-    socket.on("disconnect", () => {});
+    socket.on("connect_error", (err) => {
+      console.error("[UnreadContext] Socket connect_error:", err);
+    });
 
     return () => {
       socket.off("newMessage", handleNewMessage);

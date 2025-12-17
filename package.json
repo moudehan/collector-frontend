@@ -15,6 +15,7 @@
     "@mui/icons-material": "^7.3.5",
     "@mui/material": "^7.3.5",
     "axios": "^1.13.2",
+    "keycloak-js": "^26.2.2",
     "notistack": "^3.0.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/keycloak-js": "^2.5.4",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",

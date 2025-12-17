@@ -1,8 +1,33 @@
 import { useEffect, useState, type ReactNode } from "react";
 import keycloak from "../../keycloak";
+import { API_URL } from "../config";
 import { logoutApi } from "../services/auth.api";
 import type { User } from "../types/user.type";
 import { AuthContext } from "./auth.contexte";
+
+async function syncUserWithBackend() {
+  const token = localStorage.getItem("UserToken");
+  if (!token) return;
+
+  try {
+    const res = await fetch(`${API_URL}/auth/me`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      console.error(
+        "sync /auth/me FAILED",
+        res.status,
+        await res.text().catch(() => "")
+      );
+    }
+  } catch (err) {
+    console.error("Erreur sync /auth/me", err);
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -43,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (authenticated && keycloak.token) {
           localStorage.setItem("UserToken", keycloak.token);
           buildUserFromToken();
+          await syncUserWithBackend();
           if (window.location.pathname === "/") {
             window.location.replace("/Home");
           }
