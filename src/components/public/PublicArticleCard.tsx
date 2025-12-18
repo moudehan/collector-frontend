@@ -21,6 +21,7 @@ export default function PublicArticlesCard({
 
   return (
     <Card
+      data-testid="public-article-card"
       sx={{
         width: 250,
         cursor: "pointer",

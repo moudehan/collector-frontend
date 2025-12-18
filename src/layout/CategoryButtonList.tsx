@@ -18,10 +18,16 @@ export default function CategoryButtonList({
   const list = showAll ? categories : categories.slice(0, limit);
 
   return (
-    <Grid container spacing={2} justifyContent="center">
+    <Grid
+      data-testid="category-button"
+      container
+      spacing={2}
+      justifyContent="center"
+    >
       {list.map((cat) => (
         <Grid key={cat.id}>
           <AnimatedButton
+            data-testid={`category-button-${cat.id}`}
             variant="outlined"
             sx={{ border: 1 }}
             label={cat.name}
