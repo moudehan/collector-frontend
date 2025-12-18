@@ -42,9 +42,9 @@ jobs:
       - name: Unit tests
         run: npm test
 
-      - name: Start frontend
-        run: npm run dev &
-  
+      - name: Start frontend (E2E)
+        run: VITE_E2E=true npm run dev &
+
       - name: Wait for app
         run: npx wait-on http://localhost:5173
 
