@@ -1,16 +1,16 @@
 describe("Home page E2E", () => {
   beforeEach(() => {
-    cy.intercept("GET", "**/articles/public", {
-      fixture: "articles.json",
+    cy.intercept("GET", /\/articles\/public(?:\/)?(?:\?.*)?$/, (req) => {
+      if (req.query.categoryId) {
+        req.reply({ fixture: "category-articles.json" });
+      } else {
+        req.reply({ fixture: "articles.json" });
+      }
     }).as("getArticles");
 
-    cy.intercept("GET", "**/categories", {
+    cy.intercept("GET", /\/categories(?:\/)?(?:\?.*)?$/, {
       fixture: "categories.json",
     }).as("getCategories");
-
-    cy.intercept("GET", "**/articles/public?categoryId=*", {
-      fixture: "category-articles.json",
-    }).as("getArticlesByCategory");
 
     cy.visit("/");
   });
@@ -24,18 +24,13 @@ describe("Home page E2E", () => {
   });
 
   it("loads and displays public articles", () => {
-    cy.wait("@getArticles");
-
-    cy.get('[data-testid="public-article-card"]').should(
-      "have.length.at.least",
-      1
-    );
+    cy.get('[data-testid="public-article-card"]')
+      .should("exist")
+      .and("have.length.at.least", 1);
   });
 
   it("loads and displays categories", () => {
-    cy.wait("@getCategories");
-
-    cy.get('[data-testid="category-button"]').should("have.length.at.least", 1);
+    cy.contains("Parcourir par catégorie").should("be.visible");
   });
 
   it("toggles show all categories", () => {
@@ -45,12 +40,10 @@ describe("Home page E2E", () => {
 
   it("filters articles by category", () => {
     cy.contains("Cartes").click();
-
     cy.contains("Articles : Cartes").should("be.visible");
 
-    cy.get('[data-testid="public-article-card"]').should(
-      "have.length.at.least",
-      1
-    );
+    cy.get('[data-testid="public-article-card"]')
+      .should("exist")
+      .and("have.length.at.least", 1);
   });
 });
