@@ -6,5 +6,6 @@ export default defineConfig({
     baseUrl: FRONT_URL,
     viewportWidth: 1280,
     viewportHeight: 800,
+    testIsolation: false,
   },
 });
