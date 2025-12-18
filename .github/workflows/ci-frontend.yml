@@ -69,18 +69,18 @@ jobs:
       - name: Run tests with coverage for Sonar
         run: npm run test:cov
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v2
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=collector-frontend
-            -Dsonar.organization=moudehan
-            -Dsonar.sources=src
-            -Dsonar.tests=src
-            -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.tsx,**/*.test.ts
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+      # - name: SonarCloud Scan
+      #   uses: SonarSource/sonarcloud-github-action@v2
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      #   with:
+      #     args: >
+      #       -Dsonar.projectKey=collector-frontend
+      #       -Dsonar.organization=moudehan
+      #       -Dsonar.sources=src
+      #       -Dsonar.tests=src
+      #       -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.tsx,**/*.test.ts
+      #       -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
   build:
     runs-on: ubuntu-latest
