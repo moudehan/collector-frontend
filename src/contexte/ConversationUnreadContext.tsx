@@ -9,12 +9,12 @@ import {
 } from "react";
 import { io, type Socket } from "socket.io-client";
 import { API_URL } from "../config";
-import { useAuth } from "../contexte/UseAuth";
 import {
   getMyConversations,
   markConversationAsUnread,
 } from "../services/conversation.api";
 import type { Conversation } from "../types/conversation.type";
+import { useAuth } from "./UseAuth";
 
 type ConversationSummary = Conversation & {
   hasUnread?: boolean;
