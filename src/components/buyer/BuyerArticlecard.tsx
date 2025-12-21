@@ -19,6 +19,7 @@ export default function BuyerArticleCard({
   const [isFavorite, setIsFavorite] = useState<boolean>(!!article.isFavorite);
   const [likesCount, setLikesCount] = useState<number>(article.likesCount ?? 0);
   const [loading, setLoading] = useState(false);
+  const isSoldOut = (article.quantity ?? 0) <= 0;
 
   useEffect(() => {
     setIsFavorite(!!article.isFavorite);
@@ -101,13 +102,35 @@ export default function BuyerArticleCard({
         )}
       </Box>
 
-      {/* IMAGE */}
+      {isSoldOut && (
+        <Box
+          sx={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bgcolor: "rgba(0,0,0,0.7)",
+            color: "white",
+            px: 1.2,
+            py: 0.4,
+            fontSize: 11,
+            fontWeight: 800,
+            borderBottomRightRadius: 12,
+            zIndex: 2,
+          }}
+        >
+          Indisponible
+        </Box>
+      )}
+
       <Box
         sx={{
           height: 160,
           backgroundImage: `url(${imageUrl})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
+          filter: isSoldOut ? "grayscale(1)" : "none",
+          opacity: isSoldOut ? 0.7 : 1,
+          transition: "0.2s",
         }}
       />
 
@@ -137,7 +160,14 @@ export default function BuyerArticleCard({
           {article.description}
         </Typography>
 
-        <Typography fontWeight={800} color="#4C73FF" sx={{ mt: 0.5 }}>
+        <Typography
+          fontWeight={800}
+          sx={{
+            mt: 0.5,
+            color: isSoldOut ? "gray" : "#4C73FF",
+            textDecoration: isSoldOut ? "line-through" : "none",
+          }}
+        >
           {article.price} €
         </Typography>
 
@@ -182,6 +212,16 @@ export default function BuyerArticleCard({
               {likesCount}
             </Typography>
           </Box>
+        )}
+        {isSoldOut && (
+          <Typography
+            fontSize={11}
+            color="gray"
+            sx={{ mt: 0.3, fontStyle: "italic" }}
+          >
+            Cet article n’est plus disponible, mais vous pouvez toujours
+            consulter sa fiche.
+          </Typography>
         )}
       </Box>
     </Card>

@@ -19,6 +19,7 @@ import ArticleImageGallery from "../../components/ArticleImageGallery";
 import AnimatedButton from "../../components/Button";
 import UserPageLayout from "../../layout/UserPageLayout";
 
+import { useCart } from "../../contexte/cart/useCart";
 import ArticleInfoSection from "../../layout/ArticleInfoSection";
 import { rateArticle } from "../../services/article-ratings.api";
 import {
@@ -32,6 +33,7 @@ import type { Shop } from "../../types/shop.type";
 export default function ArticleDetailPageBuyer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addItem } = useCart();
 
   const [article, setArticle] = useState<Article | null>(null);
   const [shop, setShop] = useState<Shop | null>(null);
@@ -40,6 +42,8 @@ export default function ArticleDetailPageBuyer() {
   const [avgRating, setAvgRating] = useState(0);
   const [ratingsCount, setRatingsCount] = useState(0);
   const [userRating, setUserRating] = useState<number | null>(null);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const isSoldOut = article ? (article.quantity ?? 0) <= 0 : false;
 
   useEffect(() => {
     if (!id) return;
@@ -99,6 +103,20 @@ export default function ArticleDetailPageBuyer() {
       setRatingsCount(res.ratingsCount);
     } catch (e) {
       console.error("Erreur notation :", e);
+    }
+  }
+
+  async function handleAddToCart() {
+    if (!article) return;
+
+    try {
+      setAddingToCart(true);
+      await addItem(article.id, 1);
+      navigate("/cart");
+    } catch (error) {
+      console.error("Erreur ajout au panier :", error);
+    } finally {
+      setAddingToCart(false);
     }
   }
 
@@ -188,11 +206,26 @@ export default function ArticleDetailPageBuyer() {
               />
 
               <AnimatedButton
-                label="Acheter"
+                label={
+                  addingToCart
+                    ? "Ajout en cours..."
+                    : isSoldOut
+                    ? "Article indisponible"
+                    : "Acheter"
+                }
                 startIcon={<ShoppingCartIcon />}
                 width="100%"
                 variant="outlined"
-                sx={{ border: 1, mb: 2 }}
+                sx={{
+                  border: 1,
+                  mb: 2,
+                  ...(isSoldOut && {
+                    opacity: 0.6,
+                    cursor: "not-allowed",
+                  }),
+                }}
+                disabled={addingToCart || isSoldOut}
+                onClick={isSoldOut ? undefined : handleAddToCart}
               />
             </Card>
           </Box>
@@ -204,7 +237,7 @@ export default function ArticleDetailPageBuyer() {
             p: 4,
             borderRadius: 4,
             background: "#ffffff",
-            boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
+            boxShadow: "0 8px 30px rgba(0, 0, 0, 0.08)",
           }}
         >
           <Typography fontSize={22} fontWeight={900} mb={2}>
@@ -273,12 +306,10 @@ export default function ArticleDetailPageBuyer() {
                         ? "#4CAF50"
                         : "#fff"
                       : "#fff",
-
                   borderColor:
                     userRating !== null && value <= userRating
                       ? "#4CAF50"
                       : "#ddd",
-
                   color: value <= avgRating ? "#000" : "#444",
                   "&:hover": {
                     transform: "scale(1.15)",

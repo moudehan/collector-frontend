@@ -1,6 +1,10 @@
+import type { ReactNode } from "react";
+
 import DoorSlidingIcon from "@mui/icons-material/DoorSliding";
+import EventIcon from "@mui/icons-material/Event";
 import HomeIcon from "@mui/icons-material/Home";
 import InfoIcon from "@mui/icons-material/Info";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
 import StraightenIcon from "@mui/icons-material/Straighten";
 import { Box, Card, Divider, Typography } from "@mui/material";
 
@@ -11,6 +15,20 @@ interface Props {
 }
 
 export default function ArticleInfoSection({ article }: Props) {
+  const formattedPrice = `${Number(article.price ?? 0).toFixed(2)} €`;
+  const etat = article.conditionLabel ?? "Non renseigné";
+  const era = article.vintageEra ?? "Non précisée";
+  const year = article.productionYear
+    ? article.productionYear.toString()
+    : "Non renseignée";
+
+  const quantityLabel =
+    (article.quantity ?? 0) <= 0
+      ? "Plus disponible"
+      : article.quantity === 1
+      ? "Article unique (1 exemplaire)"
+      : `${article.quantity} exemplaires disponibles`;
+
   return (
     <Card
       sx={{
@@ -42,32 +60,53 @@ export default function ArticleInfoSection({ article }: Props) {
         <InfoItem
           icon={<InfoIcon sx={{ fontSize: 28, color: "#4C73FF" }} />}
           label="Prix"
-          value={`${article.price} €`}
+          value={formattedPrice}
           highlight
+        />
+
+        <InfoItem
+          icon={<StraightenIcon sx={{ fontSize: 28, color: "#4C73FF" }} />}
+          label="Époque"
+          value={era}
+        />
+
+        <InfoItem
+          icon={<EventIcon sx={{ fontSize: 28, color: "#4C73FF" }} />}
+          label="Année de production"
+          value={year}
+        />
+
+        <InfoItem
+          icon={<Inventory2Icon sx={{ fontSize: 28, color: "#4C73FF" }} />}
+          label="Disponibilité"
+          value={quantityLabel}
         />
 
         <InfoItem
           icon={<DoorSlidingIcon sx={{ fontSize: 28, color: "#4C73FF" }} />}
           label="État"
-          value={article.likesCount || "Très bon état"}
+          value={etat || "Très bon état"}
         />
 
         <InfoItem
-          icon={<StraightenIcon sx={{ fontSize: 28, color: "#4C73FF" }} />}
-          label="Dimensions / Taille"
-          value={article.description || "Non renseigné"}
+          icon={<DoorSlidingIcon sx={{ fontSize: 28, color: "#4C73FF" }} />}
+          label="Nombre de suivi"
+          value={article.likesCount}
         />
       </Box>
 
       <Divider sx={{ my: 4 }} />
 
-      <Typography fontWeight={800} fontSize={18} mb={1}>
-        Description de l’article
-      </Typography>
-
-      <Typography color="gray" sx={{ lineHeight: 1.6, fontSize: 15 }}>
-        {article.description}
-      </Typography>
+      {article.vintageNotes && (
+        <>
+          <Typography fontWeight={800} fontSize={18} mt={3} mb={1}>
+            Détails vintage
+          </Typography>
+          <Typography color="gray" sx={{ lineHeight: 1.6, fontSize: 15 }}>
+            {article.vintageNotes}
+          </Typography>
+        </>
+      )}
     </Card>
   );
 }
@@ -78,7 +117,7 @@ function InfoItem({
   value,
   highlight,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string | number;
   highlight?: boolean;

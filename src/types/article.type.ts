@@ -30,6 +30,11 @@ export interface Article {
     lastname: string;
     email: string;
   };
+  quantity: number;
+  vintageEra?: string | null;
+  productionYear?: number | null;
+  conditionLabel?: string | null;
+  vintageNotes?: string | null;
 }
 
 export type PriceHistoryItem = {
@@ -47,6 +52,11 @@ export interface UpdatedArticlePayload {
   shopId: string;
   oldImages: ArticleImage[];
   newImages: File[];
+  quantity?: number;
+  vintageEra?: string;
+  productionYear?: number;
+  conditionLabel?: string;
+  vintageNotes?: string;
 }
 
 export interface ArticleImage {

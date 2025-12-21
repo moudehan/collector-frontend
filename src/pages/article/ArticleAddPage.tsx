@@ -31,6 +31,11 @@ export default function ArticleAddPage() {
   const [price, setPrice] = useState<number | "">("");
   const [description, setDescription] = useState("");
   const [shippingCost, setShippingCost] = useState<number | "">("");
+  const [quantity, setQuantity] = useState<number | "">(1);
+  const [vintageEra, setVintageEra] = useState<string>("");
+  const [productionYear, setProductionYear] = useState<number | "">("");
+  const [conditionLabel, setConditionLabel] = useState<string>("");
+  const [vintageNotes, setVintageNotes] = useState<string>("");
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
@@ -49,7 +54,6 @@ export default function ArticleAddPage() {
       });
   }, []);
 
-  console.log({ shopId });
   function handleSelectImages(e: React.ChangeEvent<HTMLInputElement>) {
     const newFiles = e.target.files ? Array.from(e.target.files) : [];
     if (newFiles.length === 0) return;
@@ -94,25 +98,43 @@ export default function ArticleAddPage() {
     formData.append("title", title);
     formData.append("price", String(price));
     formData.append("description", description);
-    formData.append("shipping_cost", String(shippingCost));
+    formData.append("shipping_cost", String(shippingCost || 0));
     formData.append("categoryId", selectedCategory.id);
-    formData.append("shopId", shopId!);
+    formData.append("shopId", shopId);
+
+    if (quantity !== "") {
+      formData.append("quantity", String(quantity));
+    }
+    if (vintageEra.trim()) {
+      formData.append("vintageEra", vintageEra.trim());
+    }
+    if (productionYear !== "") {
+      formData.append("productionYear", String(productionYear));
+    }
+    if (conditionLabel.trim()) {
+      formData.append("conditionLabel", conditionLabel.trim());
+    }
+    if (vintageNotes.trim()) {
+      formData.append("vintageNotes", vintageNotes.trim());
+    }
 
     images.forEach((img) => formData.append("images", img));
 
     try {
       await createArticle(formData);
       navigate(`/shop/${shopId}`);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-      setErrorMessage("Erreur lors de la création de l’article.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Erreur lors de la création de l’article.";
+      setErrorMessage(message);
     }
   }
 
   return (
     <UserPageLayout>
       <Container sx={{ py: 4, maxWidth: "900px" }}>
-        {/* RETOUR */}
         <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
           <IconButton onClick={() => navigate(-1)}>
             <ArrowBackIosNewIcon />
@@ -223,6 +245,18 @@ export default function ArticleAddPage() {
             onChange={(e) => setShippingCost(Number(e.target.value))}
           />
 
+          <TextField
+            fullWidth
+            label="Quantité disponible"
+            type="number"
+            sx={{ mb: 2 }}
+            value={quantity}
+            inputProps={{ min: 1 }}
+            onChange={(e) =>
+              setQuantity(e.target.value === "" ? "" : Number(e.target.value))
+            }
+          />
+
           <Autocomplete
             sx={{ mb: 2 }}
             options={categories}
@@ -232,6 +266,45 @@ export default function ArticleAddPage() {
             renderInput={(params) => (
               <TextField {...params} label="Catégorie" />
             )}
+          />
+
+          <TextField
+            fullWidth
+            label="Époque (ex : Années 90, Y2K...)"
+            sx={{ mb: 2 }}
+            value={vintageEra}
+            onChange={(e) => setVintageEra(e.target.value)}
+          />
+
+          <TextField
+            fullWidth
+            label="Année de production (approx.)"
+            type="number"
+            sx={{ mb: 2 }}
+            value={productionYear}
+            onChange={(e) =>
+              setProductionYear(
+                e.target.value === "" ? "" : Number(e.target.value)
+              )
+            }
+          />
+
+          <TextField
+            fullWidth
+            label="État (ex : Très bon état, Bon état, Correct...)"
+            sx={{ mb: 2 }}
+            value={conditionLabel}
+            onChange={(e) => setConditionLabel(e.target.value)}
+          />
+
+          <TextField
+            fullWidth
+            label="Détails vintage (histoire, particularités, etc.)"
+            multiline
+            rows={3}
+            sx={{ mb: 2 }}
+            value={vintageNotes}
+            onChange={(e) => setVintageNotes(e.target.value)}
           />
 
           <TextField

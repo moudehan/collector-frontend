@@ -31,7 +31,7 @@ interface Props {
   onClose: () => void;
   article: Article;
   categories: Category[];
-  onSave: (updatedArticle: UpdatedArticlePayload) => void;
+  onSave: (updatedArticle: UpdatedArticlePayload) => Promise<void>;
 }
 
 export default function ArticleEditModal({
@@ -52,8 +52,27 @@ export default function ArticleEditModal({
   const [images, setImages] = useState<ArticleImage[]>(article.images || []);
   const [newImages, setNewImages] = useState<File[]>([]);
 
+  const [quantity, setQuantity] = useState<number | string>(
+    article.quantity ?? 1
+  );
+  const [vintageEra, setVintageEra] = useState<string>(
+    article.vintageEra ?? ""
+  );
+  const [productionYear, setProductionYear] = useState<number | string>(
+    article.productionYear ?? ""
+  );
+  const [conditionLabel, setConditionLabel] = useState<string>(
+    article.conditionLabel ?? ""
+  );
+  const [vintageNotes, setVintageNotes] = useState<string>(
+    article.vintageNotes ?? ""
+  );
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   function handleAddImages(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
     setNewImages((prev) => [...prev, ...files]);
   }
 
@@ -65,7 +84,35 @@ export default function ArticleEditModal({
     setNewImages((prev) => prev.filter((f) => f !== file));
   }
 
-  function handleSave() {
+  function extractErrorMessage(err: unknown): string {
+    if (err instanceof Error && err.message) {
+      return err.message;
+    }
+
+    if (typeof err === "object" && err !== null) {
+      const maybeWithResponse = err as {
+        response?: { data?: unknown };
+      };
+
+      const data = maybeWithResponse.response?.data;
+      if (data && typeof data === "object") {
+        const typed = data as { message?: string | string[] };
+
+        if (Array.isArray(typed.message) && typed.message.length > 0) {
+          return String(typed.message[0]);
+        }
+        if (typeof typed.message === "string") {
+          return typed.message;
+        }
+      }
+    }
+
+    return "Erreur lors de la modification de l’article.";
+  }
+
+  async function handleSave() {
+    setErrorMessage(null);
+
     const payload: UpdatedArticlePayload = {
       title,
       price,
@@ -73,10 +120,21 @@ export default function ArticleEditModal({
       categoryId: selectedCategory.id,
       shopId: article.shop.id,
       oldImages: images,
-      newImages: newImages,
+      newImages,
+      quantity: quantity === "" ? undefined : Number(quantity),
+      vintageEra: vintageEra.trim() || undefined,
+      productionYear:
+        productionYear === "" ? undefined : Number(productionYear),
+      conditionLabel: conditionLabel.trim() || undefined,
+      vintageNotes: vintageNotes.trim() || undefined,
     };
 
-    onSave(payload);
+    try {
+      await onSave(payload);
+      onClose();
+    } catch (err: unknown) {
+      setErrorMessage(extractErrorMessage(err));
+    }
   }
 
   return (
@@ -146,7 +204,7 @@ export default function ArticleEditModal({
         >
           <ImageIcon sx={{ fontSize: 40, color: "#4C73FF" }} />
           <Typography fontSize={14} color="gray">
-            Cliquez pour ajouter d'autres images (JPG, PNG)
+            Cliquez pour ajouter d&apos;autres images (JPG, PNG)
           </Typography>
 
           <input
@@ -206,7 +264,21 @@ export default function ArticleEditModal({
           type="number"
           sx={{ mb: 2 }}
           value={price}
-          onChange={(e) => setPrice(Number(e.target.value))}
+          onChange={(e) =>
+            setPrice(e.target.value === "" ? "" : Number(e.target.value))
+          }
+        />
+
+        <TextField
+          fullWidth
+          label="Quantité disponible"
+          type="number"
+          sx={{ mb: 2 }}
+          value={quantity}
+          inputProps={{ min: 1 }}
+          onChange={(e) =>
+            setQuantity(e.target.value === "" ? "" : Number(e.target.value))
+          }
         />
 
         <Autocomplete
@@ -220,12 +292,57 @@ export default function ArticleEditModal({
 
         <TextField
           fullWidth
+          label="Époque (ex : Années 90, Y2K...)"
+          sx={{ mb: 2 }}
+          value={vintageEra}
+          onChange={(e) => setVintageEra(e.target.value)}
+        />
+
+        <TextField
+          fullWidth
+          label="Année de production (approx.)"
+          type="number"
+          sx={{ mb: 2 }}
+          value={productionYear}
+          onChange={(e) =>
+            setProductionYear(
+              e.target.value === "" ? "" : Number(e.target.value)
+            )
+          }
+        />
+
+        <TextField
+          fullWidth
+          label="État (ex : Très bon état, Bon état, Correct...)"
+          sx={{ mb: 2 }}
+          value={conditionLabel}
+          onChange={(e) => setConditionLabel(e.target.value)}
+        />
+
+        <TextField
+          fullWidth
+          label="Détails vintage (histoire, particularités, etc.)"
+          multiline
+          rows={3}
+          sx={{ mb: 2 }}
+          value={vintageNotes}
+          onChange={(e) => setVintageNotes(e.target.value)}
+        />
+
+        <TextField
+          fullWidth
           label="Description"
           multiline
           rows={4}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+
+        {errorMessage && (
+          <Typography color="error" sx={{ mt: 2 }}>
+            {errorMessage}
+          </Typography>
+        )}
       </DialogContent>
 
       <DialogActions sx={{ p: 3 }}>

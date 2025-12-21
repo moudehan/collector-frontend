@@ -142,33 +142,43 @@ export default function ArticleDetailPage() {
     formData.append("title", payload.title);
     formData.append("description", payload.description);
     formData.append("price", String(payload.price));
-    formData.append("shipping_cost", "0");
+    formData.append("shipping_cost", String(article.shipping_cost ?? 0));
     formData.append("shopId", payload.shopId);
 
     if (payload.categoryId) {
       formData.append("categoryId", payload.categoryId);
     }
 
-    formData.append("oldImages", JSON.stringify(payload.oldImages));
+    if (payload.quantity !== undefined) {
+      formData.append("quantity", String(payload.quantity));
+    }
+    if (payload.vintageEra) {
+      formData.append("vintageEra", payload.vintageEra);
+    }
+    if (payload.productionYear !== undefined) {
+      formData.append("productionYear", String(payload.productionYear));
+    }
+    if (payload.conditionLabel) {
+      formData.append("conditionLabel", payload.conditionLabel);
+    }
+    if (payload.vintageNotes) {
+      formData.append("vintageNotes", payload.vintageNotes);
+    }
 
+    formData.append("oldImages", JSON.stringify(payload.oldImages));
     payload.newImages.forEach((file: File) => {
       formData.append("newImages", file);
     });
 
-    try {
-      const updated = await updateArticle(article.id, formData);
+    const updated = await updateArticle(article.id, formData);
 
-      const fixedImages =
-        updated.images?.map((img: { url: string }) => ({
-          ...img,
-          url: img.url.startsWith("http") ? img.url : `${API_URL}${img.url}`,
-        })) ?? [];
+    const fixedImages =
+      updated.images?.map((img: { url: string }) => ({
+        ...img,
+        url: img.url.startsWith("http") ? img.url : `${API_URL}${img.url}`,
+      })) ?? [];
 
-      setArticle({ ...updated, images: fixedImages });
-      setOpenEdit(false);
-    } catch (e) {
-      console.error(e);
-    }
+    setArticle({ ...updated, images: fixedImages });
   }
 
   return (
@@ -333,6 +343,37 @@ export default function ArticleDetailPage() {
               label="Frais de livraison"
               value={`${article.shipping_cost} €`}
             />
+
+            <InfoLine
+              label="Quantité disponible"
+              value={article.quantity ?? 0}
+            />
+
+            <InfoLine
+              label="Époque"
+              value={article.vintageEra ?? "Non précisée"}
+            />
+
+            <InfoLine
+              label="Année de production"
+              value={
+                article.productionYear !== undefined &&
+                article.productionYear !== null
+                  ? article.productionYear
+                  : "Non renseignée"
+              }
+            />
+
+            <InfoLine
+              label="État"
+              value={article.conditionLabel ?? "Non renseigné"}
+            />
+
+            <InfoLine
+              label="Détails vintage"
+              value={article.vintageNotes ?? "—"}
+            />
+
             <InfoLine
               label="Créé le"
               value={new Date(article.created_at).toLocaleString()}

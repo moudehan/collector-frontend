@@ -119,7 +119,26 @@ export async function createArticle(formData: FormData) {
     body: formData,
   });
 
-  if (!res.ok) throw new Error("Erreur lors de la création de l’article");
+  if (!res.ok) {
+    let message = "Erreur lors de la création de l’article";
+
+    try {
+      const data: unknown = await res.json();
+      if (data && typeof data === "object" && "message" in data) {
+        const raw = (data as { message: unknown }).message;
+
+        if (Array.isArray(raw)) {
+          message = raw.join("\n");
+        } else if (typeof raw === "string") {
+          message = raw;
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
+    throw new Error(message);
+  }
 
   return res.json();
 }
@@ -136,7 +155,24 @@ export async function updateArticle(id: string, formData: FormData) {
   });
 
   if (!res.ok) {
-    throw new Error("Erreur lors de la modification");
+    let message = "Erreur lors de la modification";
+
+    try {
+      const data: unknown = await res.json();
+      if (data && typeof data === "object" && "message" in data) {
+        const raw = (data as { message: unknown }).message;
+
+        if (Array.isArray(raw)) {
+          message = raw.join("\n");
+        } else if (typeof raw === "string") {
+          message = raw;
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
+    throw new Error(message);
   }
 
   return res.json();
