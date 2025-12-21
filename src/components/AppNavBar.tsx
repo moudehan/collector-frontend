@@ -1,7 +1,9 @@
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import LanguageIcon from "@mui/icons-material/Language";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import SearchIcon from "@mui/icons-material/Search";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 
 import {
   AppBar,
@@ -21,7 +23,6 @@ import AnimatedButton from "./Button";
 import type { Item } from "./DropDownList";
 import DropdownList from "./DropDownList";
 
-import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import {
   getUserNotifications,
   markAllNotificationsAsRead,
@@ -30,6 +31,7 @@ import {
 } from "../services/notifications.api";
 
 import keycloak from "../../keycloak";
+import { useCart } from "../contexte/cart/useCart";
 import { useConversationUnread } from "../contexte/ConversationUnreadContext";
 import { useAuth } from "../contexte/UseAuth";
 import { useArticleNotifications } from "../services/socket";
@@ -38,9 +40,10 @@ export default function AppNavbar() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { unreadCount: unreadConversationsCount } = useConversationUnread();
+  const { cartItemsCount } = useCart();
 
   const [openDrawer, setOpenDrawer] = useState(false);
-  const toggleDrawer = () => setOpenDrawer(!openDrawer);
+  const toggleDrawer = () => setOpenDrawer((prev) => !prev);
 
   const [notifAnchor, setNotifAnchor] = useState<HTMLElement | null>(null);
   const [visibleCount, setVisibleCount] = useState(10);
@@ -160,6 +163,14 @@ export default function AppNavbar() {
                 >
                   <Badge badgeContent={unreadConversationsCount} color="error">
                     <ChatBubbleOutlineIcon />
+                  </Badge>
+                </IconButton>
+                <IconButton
+                  onClick={() => navigate("/cart")}
+                  title="Mon panier"
+                >
+                  <Badge badgeContent={cartItemsCount} color="error">
+                    <ShoppingCartIcon />
                   </Badge>
                 </IconButton>
 
