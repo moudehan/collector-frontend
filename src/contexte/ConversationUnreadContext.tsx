@@ -14,7 +14,7 @@ import {
 } from "../services/conversation.api";
 import type { Conversation } from "../types/conversation.type";
 import { useAuth } from "./UseAuth";
-const API_URL = import.meta.env.VITE_API_URL;
+const VITE_SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 
 type ConversationSummary = Conversation & {
   hasUnread?: boolean;
@@ -73,8 +73,8 @@ export function ConversationUnreadProvider({
       return;
     }
 
-    const socket = io(API_URL, {
-      transports: ["websocket"],
+    const socket = io(VITE_SOCKET_URL, {
+      transports: ["websocket", "polling"],
       auth: {
         token: `Bearer ${token}`,
       },

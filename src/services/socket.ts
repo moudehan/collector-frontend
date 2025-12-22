@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { io } from "socket.io-client";
-const API_URL = import.meta.env.VITE_API_URL;
+const VITE_SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 
 export interface LiveNotification {
   id: string;
@@ -16,8 +16,8 @@ export function useArticleNotifications(
   onNotif: (notif: LiveNotification) => void
 ) {
   useEffect(() => {
-    const socket = io(API_URL, {
-      transports: ["websocket"],
+    const socket = io(VITE_SOCKET_URL, {
+      transports: ["websocket", "polling"],
       auth: {
         token: localStorage.getItem("UserToken"),
       },

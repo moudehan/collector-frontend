@@ -30,14 +30,15 @@ import { getShopById } from "../../services/shop.api";
 import { useConversationUnread } from "../../contexte/ConversationUnreadContext";
 import { useAuth } from "../../contexte/UseAuth";
 
+const VITE_SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+const API_URL = import.meta.env.VITE_API_URL;
+
 import type { Article } from "../../types/article.type";
 import type {
   Conversation,
   ConversationMessage,
 } from "../../types/conversation.type";
 import type { Shop } from "../../types/shop.type";
-
-const API_URL = import.meta.env.VITE_API_URL;
 
 type ConversationMessageWithRelation = ConversationMessage & {
   conversationId?: string;
@@ -80,7 +81,7 @@ export default function ConversationPage() {
   const currentConversationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    socketRef.current = io(API_URL, {
+    socketRef.current = io(VITE_SOCKET_URL, {
       transports: ["websocket"],
     });
     socketRef.current.on("connect", () => {});
