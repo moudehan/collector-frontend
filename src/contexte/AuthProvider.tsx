@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import keycloak from "../../keycloak";
-import { API_URL } from "../config";
 import { logoutApi } from "../services/auth.api";
 import type { User } from "../types/user.type";
 import { AuthContext } from "./auth.contexte";
+const API_URL = import.meta.env.VITE_API_URL;
 
 async function syncUserWithBackend() {
   const token = localStorage.getItem("UserToken");

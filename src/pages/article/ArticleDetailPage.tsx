@@ -19,14 +19,12 @@ import UserPageLayout from "../../layout/UserPageLayout";
 
 import ArticleImageGallery from "../../components/ArticleImageGallery";
 import ModalDeleteConfirm from "../../components/ModaleDeleteConfirm";
-import ArticleEditModal from "./ArticleEditModal";
-
-import { API_URL } from "../../config";
 import {
   deleteArticle,
   getArticleById,
   updateArticle,
 } from "../../services/articles.api";
+import ArticleEditModal from "./ArticleEditModal";
 
 import type {
   Article,
@@ -44,6 +42,7 @@ import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import StarHalfIcon from "@mui/icons-material/StarHalf";
 import TagIcon from "@mui/icons-material/Tag";
+const API_URL = import.meta.env.VITE_API_URL;
 
 function InfoLine({ label, value }: { label: string; value: string | number }) {
   const getIcon = () => {

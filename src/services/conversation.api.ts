@@ -1,8 +1,8 @@
-import { API_URL } from "../config";
 import type {
   Conversation,
   ConversationMessage,
 } from "../types/conversation.type";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export async function getMyConversations(): Promise<Conversation[]> {
   const token = localStorage.getItem("UserToken");

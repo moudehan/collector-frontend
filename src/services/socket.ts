@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { io } from "socket.io-client";
-import { API_URL } from "../config";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export interface LiveNotification {
   id: string;

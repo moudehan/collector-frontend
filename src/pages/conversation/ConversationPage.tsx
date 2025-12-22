@@ -30,13 +30,14 @@ import { getShopById } from "../../services/shop.api";
 import { useConversationUnread } from "../../contexte/ConversationUnreadContext";
 import { useAuth } from "../../contexte/UseAuth";
 
-import { API_URL } from "../../config";
 import type { Article } from "../../types/article.type";
 import type {
   Conversation,
   ConversationMessage,
 } from "../../types/conversation.type";
 import type { Shop } from "../../types/shop.type";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 type ConversationMessageWithRelation = ConversationMessage & {
   conversationId?: string;

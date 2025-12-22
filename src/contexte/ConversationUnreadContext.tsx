@@ -8,13 +8,13 @@ import {
   type ReactNode,
 } from "react";
 import { io, type Socket } from "socket.io-client";
-import { API_URL } from "../config";
 import {
   getMyConversations,
   markConversationAsUnread,
 } from "../services/conversation.api";
 import type { Conversation } from "../types/conversation.type";
 import { useAuth } from "./UseAuth";
+const API_URL = import.meta.env.VITE_API_URL;
 
 type ConversationSummary = Conversation & {
   hasUnread?: boolean;

@@ -1,8 +1,8 @@
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import StarIcon from "@mui/icons-material/Star";
 import { Box, Card, Typography } from "@mui/material";
-import { API_URL } from "../../config";
 import type { Article } from "../../types/article.type";
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface PublicArticlesCardProps {
   article: Article;

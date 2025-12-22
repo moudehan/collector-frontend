@@ -3,9 +3,9 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import StarIcon from "@mui/icons-material/Star";
 import { Box, Card, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-import { API_URL } from "../../config";
 import { followArticle, unfollowArticle } from "../../services/articles.api";
 import type { Article } from "../../types/article.type";
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface BuyerArticleCardProps {
   article: Article;

@@ -1,5 +1,5 @@
-import { API_URL } from "../config";
 import type { Shop } from "../types/shop.type";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export async function getMyShops(): Promise<Shop[]> {
   const token = localStorage.getItem("UserToken");
