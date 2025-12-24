@@ -1,8 +1,8 @@
 import { Box, Card, IconButton } from "@mui/material";
-import { useRef, useState } from "react";
-
+import { useEffect, useRef, useState } from "react";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface ImageObj {
   url: string;
@@ -12,9 +12,22 @@ interface Props {
   images: ImageObj[];
 }
 
+function buildImageUrl(rawUrl?: string): string {
+  if (!rawUrl) return "/placeholder.png";
+  if (rawUrl.startsWith("http")) return rawUrl;
+  return `${API_URL}${rawUrl}`;
+}
+
 export default function ArticleImageGallery({ images }: Props) {
-  const [selectedImage, setSelectedImage] = useState<string>(images[0]?.url);
+  const [selectedImage, setSelectedImage] = useState<string>(
+    buildImageUrl(images[0]?.url)
+  );
   const thumbnailsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedImage(buildImageUrl(images[0]?.url));
+  }, [images]);
 
   const scrollThumbnails = (direction: "left" | "right") => {
     if (!thumbnailsRef.current) return;
@@ -76,28 +89,32 @@ export default function ArticleImageGallery({ images }: Props) {
             maxWidth: `calc(120px * 5 + 8px * 4)`,
           }}
         >
-          {images.map((img, idx) => (
-            <Card
-              key={idx}
-              sx={{
-                minWidth: 120,
-                height: 90,
-                borderRadius: 2,
-                overflow: "hidden",
-                cursor: "pointer",
-                backgroundImage: `url(${img.url})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                border:
-                  img.url === selectedImage
-                    ? "3px solid #4C73FF"
-                    : "2px solid transparent",
-                transition: "0.2s",
-                flexShrink: 0,
-              }}
-              onClick={() => setSelectedImage(img.url)}
-            />
-          ))}
+          {images.map((img, idx) => {
+            const imageUrl = buildImageUrl(img.url);
+
+            return (
+              <Card
+                key={idx}
+                sx={{
+                  minWidth: 120,
+                  height: 90,
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  cursor: "pointer",
+                  backgroundImage: `url(${imageUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  border:
+                    imageUrl === selectedImage
+                      ? "3px solid #4C73FF"
+                      : "2px solid transparent",
+                  transition: "0.2s",
+                  flexShrink: 0,
+                }}
+                onClick={() => setSelectedImage(imageUrl)}
+              />
+            );
+          })}
         </Box>
 
         <IconButton

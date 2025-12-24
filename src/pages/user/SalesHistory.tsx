@@ -179,7 +179,7 @@ export default function SalesHistory() {
   }
 
   function handleContactBuyer(sale: SaleItem) {
-    navigate("/conversation", {
+    navigate("/conversations", {
       state: {
         articleId: sale.articleId,
         shopId: sale.shopId,

@@ -195,8 +195,9 @@ export default function ShopDetailPageBuyer() {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
             gap: 3,
+            alignItems: "stretch",
           }}
         >
           {visibleArticles.map((article) => (

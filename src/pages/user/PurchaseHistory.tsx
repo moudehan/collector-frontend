@@ -26,7 +26,60 @@ import {
 } from "../../services/orders.api";
 
 type SortBy = "recent" | "old" | "priceUp" | "priceDown";
-type StatusFilter = "all" | "paid" | "pending" | "canceled";
+type StatusFilter =
+  | "all"
+  | "paid"
+  | "pending"
+  | "shipped"
+  | "delivered"
+  | "canceled";
+
+function getStatusLabel(status: string): string {
+  switch (status) {
+    case "PENDING":
+      return "En attente";
+    case "PAID":
+      return "Paiement reçu";
+    case "PROCESSING":
+      return "En préparation";
+    case "SHIPPED":
+      return "Expédiée";
+    case "DELIVERED":
+      return "Livrée";
+    case "CANCELED":
+      return "Annulée";
+    default:
+      return status;
+  }
+}
+
+function getStatusColor(
+  status: string
+): "success" | "warning" | "error" | "default" {
+  switch (status) {
+    case "PAID":
+    case "DELIVERED":
+      return "success";
+    case "PENDING":
+    case "PROCESSING":
+    case "SHIPPED":
+      return "warning";
+    case "CANCELED":
+      return "error";
+    default:
+      return "default";
+  }
+}
+
+function mapFilterToStatuses(filter: StatusFilter): string[] | null {
+  if (filter === "all") return null;
+  if (filter === "paid") return ["PAID"];
+  if (filter === "pending") return ["PENDING", "PROCESSING"];
+  if (filter === "shipped") return ["SHIPPED"];
+  if (filter === "delivered") return ["DELIVERED"];
+  if (filter === "canceled") return ["CANCELED"];
+  return null;
+}
 
 export default function PurchaseHistory() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -68,44 +121,12 @@ export default function PurchaseHistory() {
     };
   }, []);
 
-  function getStatusLabel(status: string): string {
-    switch (status) {
-      case "PAID":
-        return "Payée";
-      case "PENDING":
-        return "En cours";
-      case "CANCELED":
-        return "Annulée";
-      default:
-        return status;
-    }
-  }
-
-  function getStatusColor(
-    status: string
-  ): "success" | "warning" | "error" | "default" {
-    switch (status) {
-      case "PAID":
-        return "success";
-      case "PENDING":
-        return "warning";
-      case "CANCELED":
-        return "error";
-      default:
-        return "default";
-    }
-  }
-
   const processedOrders = useMemo(() => {
     let filtered = orders;
 
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((o) => {
-        if (statusFilter === "paid") return o.status === "PAID";
-        if (statusFilter === "pending") return o.status === "PENDING";
-        if (statusFilter === "canceled") return o.status === "CANCELED";
-        return true;
-      });
+    const allowed = mapFilterToStatuses(statusFilter);
+    if (allowed) {
+      filtered = filtered.filter((o) => allowed.includes(o.status));
     }
 
     const sorted = [...filtered].sort((a, b) => {
@@ -165,7 +186,7 @@ export default function PurchaseHistory() {
     const firstItem = order.items[0];
     if (!firstItem) return;
 
-    navigate("/conversation", {
+    navigate("/conversations", {
       state: {
         articleId: firstItem.articleId,
         shopId: firstItem.shopId,
@@ -211,11 +232,13 @@ export default function PurchaseHistory() {
           <Select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            sx={{ minWidth: 160 }}
+            sx={{ minWidth: 200 }}
           >
             <MenuItem value="all">Tous les statuts</MenuItem>
-            <MenuItem value="paid">Payée</MenuItem>
-            <MenuItem value="pending">En cours</MenuItem>
+            <MenuItem value="paid">Paiement reçu</MenuItem>
+            <MenuItem value="pending">En attente / préparation</MenuItem>
+            <MenuItem value="shipped">Expédiée</MenuItem>
+            <MenuItem value="delivered">Livrée</MenuItem>
             <MenuItem value="canceled">Annulée</MenuItem>
           </Select>
         </Card>

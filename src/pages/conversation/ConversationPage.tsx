@@ -198,7 +198,7 @@ export default function ConversationPage() {
             allConvsWithUI.find((c) => c.articleId === articleId) ?? null;
         }
 
-        if (!initialConv && allConvsWithUI.length > 0) {
+        if (!initialConv && !articleId && allConvsWithUI.length > 0) {
           initialConv = allConvsWithUI[0];
         }
 

@@ -42,6 +42,7 @@ import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import StarHalfIcon from "@mui/icons-material/StarHalf";
 import TagIcon from "@mui/icons-material/Tag";
+import { fetchPublicCategories } from "../../services/categories.api";
 const API_URL = import.meta.env.VITE_API_URL;
 
 function InfoLine({ label, value }: { label: string; value: string | number }) {
@@ -92,7 +93,7 @@ export default function ArticleDetailPage() {
 
   const [article, setArticle] = useState<Article | null>(null);
   const [shop, setShop] = useState<Shop | null>(null);
-  const [categories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [openEdit, setOpenEdit] = useState(false);
   const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
 
@@ -118,6 +119,19 @@ export default function ArticleDetailPage() {
 
     loadArticle();
   }, [id]);
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const data = await fetchPublicCategories();
+        setCategories(data);
+      } catch (err) {
+        console.error("Erreur chargement catégories :", err);
+      }
+    }
+
+    loadCategories();
+  }, []);
 
   if (!article) return null;
 
