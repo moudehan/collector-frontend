@@ -2,7 +2,7 @@ import { defineConfig } from "cypress";
 
 export default defineConfig({
   e2e: {
-    baseUrl: "http://localhost:5173",
+    baseUrl: process.env.CYPRESS_baseUrl || "http://frontend-e2e:5173",
     supportFile: false,
     video: false,
     chromeWebSecurity: false,

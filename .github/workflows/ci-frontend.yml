@@ -105,7 +105,7 @@ jobs:
             -e CYPRESS_baseUrl="http://frontend-e2e:5173" \
             -e CYPRESS_KEYCLOAK_ORIGIN="http://localhost:8181" \
             cypress-e2e \
-            cypress run --config-file cypress.config.js
+            cypress run --config-file cypress.config.ts
 
       - name: Compose logs (on failure)
         if: failure()
