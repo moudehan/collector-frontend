@@ -102,15 +102,12 @@ describe("Créer une boutique", () => {
         cy.get("#kc-login, input[type='submit']").should("be.visible").click();
       });
 
-      // ✅ s'assurer qu'on est bien revenu sur ton app
       cy.location("origin", { timeout: 60000 }).should(
         "eq",
         "http://localhost:5173"
       );
     });
 
-    // ✅ IMPORTANT : on ne force PAS /Home. On reste sur la route post-login
-    // et si le bouton n'existe pas sur cette route, on bascule sur /ShopManagement.
     cy.get("body", { timeout: 60000 }).then(($b) => {
       const hasCreate = /créer une boutique/i.test($b.text());
       if (!hasCreate) {
@@ -118,20 +115,24 @@ describe("Créer une boutique", () => {
       }
     });
 
-    // (optionnel mais utile) attendre 2 calls "sûrs" d'un écran auth
-    // -> si ça part pas, ça ne doit pas bloquer le test
     cy.wait(["@getMe", "@getCart"], { timeout: 20000 });
 
-    // Maintenant le bouton doit exister
     cy.contains("button, a", /créer une boutique/i, { timeout: 60000 })
       .should("be.visible")
+      .scrollIntoView()
       .click();
 
     cy.wait("@getMyShops", { timeout: 20000 });
 
-    cy.contains("Créer une boutique", { timeout: 20000 })
-      .should("be.visible")
-      .click();
+    cy.get("body").then(($b) => {
+      const hasDialog = $b.find('[role="dialog"]').length > 0;
+      if (!hasDialog) {
+        cy.contains("button, a", /^Créer une boutique$/i, { timeout: 20000 })
+          .should("be.visible")
+          .scrollIntoView()
+          .click();
+      }
+    });
 
     cy.get('[role="dialog"]', { timeout: 20000 })
       .should("be.visible")
