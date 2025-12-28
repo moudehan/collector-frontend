@@ -56,10 +56,7 @@ describe("Créer une boutique", () => {
     myShops = [];
 
     cy.intercept("GET", "**/api/shops/my*", (req) => {
-      req.reply({
-        statusCode: 200,
-        body: myShops,
-      });
+      req.reply({ statusCode: 200, body: myShops });
     }).as("getMyShops");
 
     cy.intercept("POST", "**/api/shops*", (req) => {
@@ -72,11 +69,7 @@ describe("Créer une boutique", () => {
       };
 
       myShops = [created, ...myShops];
-
-      req.reply({
-        statusCode: 201,
-        body: created,
-      });
+      req.reply({ statusCode: 201, body: created });
     }).as("postShops");
   });
 
@@ -106,13 +99,20 @@ describe("Créer une boutique", () => {
 
         cy.get("#kc-login, input[type='submit']").should("be.visible").click();
       });
+
+      cy.location("origin", { timeout: 60000 }).should(
+        "contain",
+        "http://localhost:5173"
+      );
     });
 
-    cy.contains("button, a", /créer une boutique/i, { timeout: 20000 }).should(
-      "be.visible"
-    );
+    cy.visit("/Home");
 
-    cy.contains("button, a", /créer une boutique/i, { timeout: 20000 }).click();
+    cy.wait(["@getMe", "@getCart"], { timeout: 20000 });
+
+    cy.contains("button, a", /créer une boutique/i, { timeout: 20000 })
+      .should("be.visible")
+      .click();
 
     cy.wait("@getMyShops", { timeout: 20000 });
 
@@ -125,17 +125,16 @@ describe("Créer une boutique", () => {
       .within(() => {
         cy.contains("label", "Nom de la boutique")
           .invoke("attr", "for")
-          .then((id) => {
-            cy.get(`#${id}`).clear().type("Ma boutique E2E");
-          });
+          .then((id) => cy.get(`#${id}`).clear().type("Ma boutique E2E"));
 
         cy.contains("label", "Description")
           .invoke("attr", "for")
-          .then((id) => {
-            cy.get(`#${id}`)
+          .then((id) =>
+            cy
+              .get(`#${id}`)
               .clear()
-              .type("Description créée par Cypress (E2E).");
-          });
+              .type("Description créée par Cypress (E2E).")
+          );
 
         cy.contains("button", /^Créer la boutique$/i)
           .should("be.visible")
