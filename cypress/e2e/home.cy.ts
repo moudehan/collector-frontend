@@ -115,7 +115,7 @@ describe("Créer une boutique", () => {
       }
     });
 
-    cy.contains("button, a", /créer une boutique/i, { timeout: 60000 })
+    cy.contains("button, a", /Créer une boutique/i, { timeout: 60000 })
       .should("be.visible")
       .scrollIntoView()
       .click();
