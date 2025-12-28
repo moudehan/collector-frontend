@@ -55,7 +55,7 @@ services:
       [
         "sh",
         "-lc",
-        'node -e "const http=require(''http'');const url=''http://frontend-e2e:5173/'';const deadline=Date.now()+120000;(function tick(){http.get(url,res=>{console.log(''FRONT READY'',res.statusCode);process.exit(0);}).on(''error'',()=>{setTimeout(tick,1000);});})();setTimeout(()=>{console.error(''TIMEOUT waiting front'');process.exit(1);},120000);" && cypress run --config-file cypress.config.ts',
+        'node -e "const http=require(''http'');const url=''http://frontend-e2e:5173/'';const deadline=Date.now()+120000;(function tick(){http.get(url,res=>{console.log(''FRONT READY'',res.statusCode);process.exit(0);}).on(''error'',()=>{setTimeout(tick,1000);});})();setTimeout(()=>{console.error(''TIMEOUT waiting front'');process.exit(1);},120000);" ... && cypress run --browser chrome --headless --config-file cypress.config.ts',
       ]
 
 volumes:
