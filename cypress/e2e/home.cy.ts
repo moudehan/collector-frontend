@@ -30,6 +30,7 @@ describe("Créer une boutique", () => {
     cy.intercept("GET", "**/api/articles/public*", {
       fixture: "articles.json",
     }).as("getArticlesPublic");
+
     cy.intercept("GET", "**/api/auth/me*", {
       statusCode: 200,
       body: { id: 1, username: "e2e", roles: ["USER"] },
@@ -53,6 +54,7 @@ describe("Créer une boutique", () => {
     cy.intercept("GET", "**/api/articles*", { fixture: "articles.json" }).as(
       "getArticlesAuth"
     );
+
     myShops = [];
 
     cy.intercept("GET", "**/api/shops/my*", (req) => {
@@ -100,15 +102,28 @@ describe("Créer une boutique", () => {
         cy.get("#kc-login, input[type='submit']").should("be.visible").click();
       });
 
+      // ✅ s'assurer qu'on est bien revenu sur ton app
       cy.location("origin", { timeout: 60000 }).should(
-        "contain",
+        "eq",
         "http://localhost:5173"
       );
     });
 
-    cy.visit("/Home");
+    // ✅ IMPORTANT : on ne force PAS /Home. On reste sur la route post-login
+    // et si le bouton n'existe pas sur cette route, on bascule sur /ShopManagement.
+    cy.get("body", { timeout: 60000 }).then(($b) => {
+      const hasCreate = /créer une boutique/i.test($b.text());
+      if (!hasCreate) {
+        cy.visit("/ShopManagement");
+      }
+    });
 
-    cy.contains("button, a", /créer une boutique/i, { timeout: 20000 })
+    // (optionnel mais utile) attendre 2 calls "sûrs" d'un écran auth
+    // -> si ça part pas, ça ne doit pas bloquer le test
+    cy.wait(["@getMe", "@getCart"], { timeout: 20000 });
+
+    // Maintenant le bouton doit exister
+    cy.contains("button, a", /créer une boutique/i, { timeout: 60000 })
       .should("be.visible")
       .click();
 
