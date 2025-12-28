@@ -1,19 +1,20 @@
 import Keycloak from "keycloak-js";
 
-const isE2E = import.meta.env.VITE_E2E === "true";
+const isCypress =
+  typeof window !== "undefined" && typeof window.Cypress !== "undefined";
 
-const keycloak = isE2E
-  ? ({
-      login: () => Promise.resolve(),
-      register: () => Promise.resolve(),
-      logout: () => Promise.resolve(),
-      authenticated: false,
-      token: null,
-    } as unknown as Keycloak)
-  : new Keycloak({
-      url: "http://localhost:8081",
-      realm: "collector",
-      clientId: "collector-frontend",
-    });
+const E2E_KEYCLOAK = {
+  url: "http://localhost:8181",
+  realm: "collector-e2e",
+  clientId: "collector-frontend",
+};
 
-export default keycloak;
+const DEFAULT_KEYCLOAK = {
+  url: "http://localhost:8081",
+  realm: "collector",
+  clientId: "collector-frontend",
+};
+
+const cfg = isCypress ? E2E_KEYCLOAK : DEFAULT_KEYCLOAK;
+
+export default new Keycloak(cfg);

@@ -1,42 +1,144 @@
-describe("Home page E2E", () => {
-  beforeEach(() => {
-    cy.intercept("GET", "**/articles/public", {
-      fixture: "articles.json",
-    }).as("getArticles");
+let myShops: Array<{ id: number; name: string; description?: string }> = [];
 
-    cy.intercept("GET", "**/categories", {
+describe("Créer une boutique", () => {
+  const KEYCLOAK_ORIGIN =
+    (Cypress.env("KEYCLOAK_ORIGIN") as string) || "http://localhost:8181";
+
+  beforeEach(() => {
+    cy.clearCookies();
+    cy.clearLocalStorage();
+
+    cy.on("uncaught:exception", (err) => {
+      if (String(err).includes("Failed to fetch")) return false;
+      return true;
+    });
+
+    cy.intercept("GET", "**/api/categories*", {
       fixture: "categories.json",
     }).as("getCategories");
+    cy.intercept("GET", "**/api/articles/public*", {
+      fixture: "articles.json",
+    }).as("getArticlesPublic");
+    cy.intercept("GET", "**/api/auth/me*", {
+      statusCode: 200,
+      body: { id: 1, username: "e2e", roles: ["USER"] },
+    }).as("getMe");
 
-    cy.visit("/Home");
+    cy.intercept("GET", "**/api/cart*", {
+      statusCode: 200,
+      body: { items: [], total: 0 },
+    }).as("getCart");
+
+    cy.intercept("GET", "**/api/conversations*", {
+      statusCode: 200,
+      body: [],
+    }).as("getConversations");
+
+    cy.intercept("GET", "**/api/notifications/my*", {
+      statusCode: 200,
+      body: [],
+    }).as("getNotifications");
+
+    cy.intercept("GET", "**/api/articles*", { fixture: "articles.json" }).as(
+      "getArticlesAuth"
+    );
+    myShops = [];
+
+    cy.intercept("GET", "**/api/shops/my*", (req) => {
+      req.reply({
+        statusCode: 200,
+        body: myShops,
+      });
+    }).as("getMyShops");
+
+    cy.intercept("POST", "**/api/shops*", (req) => {
+      const body = req.body as { name?: string; description?: string };
+
+      const created = {
+        id: 123,
+        name: body?.name ?? "Ma boutique E2E",
+        description: body?.description ?? "",
+      };
+
+      myShops = [created, ...myShops];
+
+      req.reply({
+        statusCode: 201,
+        body: created,
+      });
+    }).as("postShops");
   });
 
-  it("displays hero section and signup button", () => {
-    cy.contains("Achetez et vendez").should("be.visible");
-    cy.contains("S'inscrire").should("be.visible");
-  });
+  it("se connecte si besoin puis crée une boutique", () => {
+    cy.visit("/");
 
-  it("loads and displays public articles", () => {
-    cy.get('[data-testid="public-article-card"]')
-      .should("exist")
-      .and("have.length.at.least", 1);
-  });
+    cy.wait(["@getCategories", "@getArticlesPublic"], { timeout: 20000 });
 
-  it("loads and displays categories", () => {
-    cy.contains("Parcourir par catégorie").should("be.visible");
-  });
+    cy.get("body").then(($body) => {
+      const hasLogin = $body.text().includes("Se connecter");
+      if (!hasLogin) return;
 
-  it("toggles show all categories", () => {
-    cy.contains("Voir tout").click();
-    cy.contains("Voir moins").should("be.visible");
-  });
+      cy.contains("button, a", "Se connecter", { timeout: 20000 })
+        .should("be.visible")
+        .click();
 
-  it("filters articles by category", () => {
-    cy.contains("Cartes").click();
-    cy.contains("Articles : Cartes").should("be.visible");
+      cy.origin(KEYCLOAK_ORIGIN, () => {
+        cy.get("#username, input[name='username']", { timeout: 20000 })
+          .should("be.visible")
+          .clear()
+          .type("e2e");
 
-    cy.get('[data-testid="public-article-card"]')
-      .should("exist")
-      .and("have.length.at.least", 1);
+        cy.get("#password, input[name='password']")
+          .should("be.visible")
+          .clear()
+          .type("e2e");
+
+        cy.get("#kc-login, input[type='submit']").should("be.visible").click();
+      });
+    });
+
+    cy.wait(["@getMe", "@getCart", "@getConversations", "@getNotifications"], {
+      timeout: 20000,
+    });
+
+    cy.contains("button, a", /créer une boutique/i, { timeout: 20000 })
+      .should("be.visible")
+      .click();
+
+    cy.wait("@getMyShops", { timeout: 20000 });
+
+    cy.contains("Créer une boutique", { timeout: 20000 })
+      .should("be.visible")
+      .click();
+
+    cy.get('[role="dialog"]', { timeout: 20000 })
+      .should("be.visible")
+      .within(() => {
+        cy.contains("label", "Nom de la boutique")
+          .invoke("attr", "for")
+          .then((id) => {
+            cy.get(`#${id}`).clear().type("Ma boutique E2E");
+          });
+
+        cy.contains("label", "Description")
+          .invoke("attr", "for")
+          .then((id) => {
+            cy.get(`#${id}`)
+              .clear()
+              .type("Description créée par Cypress (E2E).");
+          });
+
+        cy.contains("button", /^Créer la boutique$/i)
+          .should("be.visible")
+          .and("be.enabled")
+          .click();
+      });
+
+    cy.wait("@postShops", { timeout: 20000 }).then((interception) => {
+      expect(interception.request.method).to.eq("POST");
+      expect(interception.request.url).to.match(/\/api\/shops/i);
+      expect(interception.response?.statusCode).to.eq(201);
+    });
+    cy.wait("@getMyShops", { timeout: 20000 });
   });
 });

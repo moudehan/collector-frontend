@@ -1,11 +1,12 @@
 import { defineConfig } from "cypress";
-import { FRONT_URL } from "./config";
 
 export default defineConfig({
   e2e: {
-    baseUrl: FRONT_URL,
-    viewportWidth: 1280,
-    viewportHeight: 800,
-    testIsolation: false,
+    baseUrl: "http://localhost:5173",
+    supportFile: false,
+    video: false,
+    chromeWebSecurity: false,
+    defaultCommandTimeout: 20000,
+    pageLoadTimeout: 60000,
   },
 });

@@ -1,0 +1,31 @@
+{
+  "realm": "collector-e2e",
+  "enabled": true,
+  "displayName": "collector-e2e",
+  "clients": [
+    {
+      "clientId": "collector-frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:5173/*"],
+      "webOrigins": ["http://localhost:5173"],
+      "rootUrl": "http://localhost:5173"
+    }
+  ],
+  "users": [
+   {
+  "username": "e2e",
+  "enabled": true,
+  "email": "e2e@example.com",
+  "emailVerified": true,
+  "firstName": "E2E",
+  "lastName": "Tester",
+  "requiredActions": [],
+  "credentials": [
+    { "type": "password", "value": "e2e", "temporary": false }
+  ]
+}
+  ]
+}
