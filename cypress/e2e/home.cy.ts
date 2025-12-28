@@ -108,8 +108,6 @@ describe("Créer une boutique", () => {
 
     cy.visit("/Home");
 
-    cy.wait(["@getMe", "@getCart"], { timeout: 20000 });
-
     cy.contains("button, a", /créer une boutique/i, { timeout: 20000 })
       .should("be.visible")
       .click();
