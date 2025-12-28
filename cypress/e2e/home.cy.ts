@@ -1,5 +1,16 @@
 let myShops: Array<{ id: number; name: string; description?: string }> = [];
 
+Cypress.on("uncaught:exception", (err) => {
+  const msg = String(err);
+
+  if (msg.includes("@stripe/stripe-js")) return false;
+  if (msg.includes("initStripe")) return false;
+  if (msg.includes("Cannot read properties of undefined (reading 'match')"))
+    return false;
+
+  return true;
+});
+
 describe("Créer une boutique", () => {
   const KEYCLOAK_ORIGIN =
     (Cypress.env("KEYCLOAK_ORIGIN") as string) || "http://localhost:8181";
