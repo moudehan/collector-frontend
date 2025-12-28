@@ -50,6 +50,7 @@ services:
     environment:
       CYPRESS_baseUrl: "http://frontend-e2e:5173"
       CYPRESS_KEYCLOAK_ORIGIN: "http://localhost:8181"
+      TS_NODE_PROJECT: "/e2e/tsconfig.cypress.json"
     command:
       [
         "sh",
