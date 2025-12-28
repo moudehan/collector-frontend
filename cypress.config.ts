@@ -3,7 +3,7 @@ import { defineConfig } from "cypress";
 export default defineConfig({
   e2e: {
     baseUrl: "http://localhost:5173",
-    supportFile: false,
+    supportFile: "cypress/support/e2e.ts",
     video: false,
     chromeWebSecurity: false,
     defaultCommandTimeout: 20000,
