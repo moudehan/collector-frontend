@@ -108,8 +108,6 @@ describe("Créer une boutique", () => {
       });
     });
 
-    // cy.wait(["@getMe", "@getCart", "@getNotifications"], { timeout: 20000 });
-
     cy.contains("button, a", /créer une boutique/i, { timeout: 20000 }).should(
       "be.visible"
     );
