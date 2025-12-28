@@ -57,76 +57,39 @@ jobs:
         run: npm run test:cov
       
   e2e:
-    runs-on: ubuntu-latest
-    # needs: quality_and_build
-    defaults:
-      run:
-        shell: bash
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v4
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
-      - name: Docker version
+      - name: Install dependencies (needed for Cypress on host)
+        run: npm ci
+
+      - name: Start E2E stack (compose) WITHOUT cypress container
         run: |
-          docker --version
-          docker compose version
-
-      - name: Sanity check required files
-        run: |
-          test -f docker-compose.e2e.yml
-          test -f keycloak/realm-e2e.json
-          test -f nginx/api-mock.conf
-          echo "OK: compose + realm + api-mock conf exist"
-
-      - name: Start E2E stack (compose)
-        run: |
-          docker compose -f docker-compose.e2e.yml up -d --remove-orphans
+          docker compose -f docker-compose.e2e.yml up -d --remove-orphans keycloak-e2e api-mock frontend-e2e
           docker compose -f docker-compose.e2e.yml ps
 
-      - name: Wait for Front (HTTP 200)
+      - name: Wait for Front on localhost
         run: |
-          set -e
-          # On attend que le front réponde depuis le réseau docker (frontend-e2e)
-          for i in {1..120}; do
-            code=$(docker compose -f docker-compose.e2e.yml run --rm --entrypoint sh cypress-e2e -lc \
-              "node -e \"require('http').get('http://frontend-e2e:5173/',r=>{console.log(r.statusCode);process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1));\""
-            ) && { echo "Front ready"; break; } || true
-            echo "Front not ready yet... ($i/120)"
+          for i in {1..180}; do
+            if curl -fsS -o /dev/null http://localhost:5173/; then
+              echo "Front ready on localhost"
+              exit 0
+            fi
+            echo "Front not ready... ($i/180)"
             sleep 1
           done
+          echo "TIMEOUT front" && exit 1
 
-      - name: Run Cypress E2E
+      - name: Run Cypress E2E on host (Electron OK)
         run: |
-          set -e
-          # IMPORTANT: on n'utilise PAS `docker compose exec` car le service peut ne pas être "running" longtemps.
-          # On run un container cypress-e2e "jetable" avec la même image et le même projet monté.
-          docker compose -f docker-compose.e2e.yml run --rm \
-            -e CYPRESS_baseUrl="http://frontend-e2e:5173" \
-            -e CYPRESS_KEYCLOAK_ORIGIN="http://localhost:8181" \
-            cypress-e2e \
-             "cypress run --browser chrome --headless --config-file cypress.config.ts"
-
-      - name: Compose logs (on failure)
-        if: failure()
-        run: |
-          echo "==== ps ===="
-          docker compose -f docker-compose.e2e.yml ps || true
-          echo "==== keycloak logs ===="
-          docker compose -f docker-compose.e2e.yml logs --tail=200 keycloak-e2e || true
-          echo "==== api-mock logs ===="
-          docker compose -f docker-compose.e2e.yml logs --tail=200 api-mock || true
-          echo "==== frontend logs ===="
-          docker compose -f docker-compose.e2e.yml logs --tail=200 frontend-e2e || true
-
-      - name: Upload Cypress artifacts (screenshots/videos)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-artifacts
-          path: |
-            cypress/screenshots
-            cypress/videos
+          CYPRESS_baseUrl="http://localhost:5173" \
+          CYPRESS_KEYCLOAK_ORIGIN="http://localhost:8181" \
+          npx cypress run --browser electron --config-file cypress.config.ts
 
       - name: Teardown
         if: always()
