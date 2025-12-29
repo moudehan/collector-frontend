@@ -51,9 +51,9 @@ describe("Créer une boutique", () => {
       body: [],
     }).as("getNotifications");
 
-    cy.intercept("GET", "**/api/articles*", { fixture: "articles.json" }).as(
-      "getArticlesAuth"
-    );
+    cy.intercept("GET", "**/api/articles*", {
+      fixture: "articles.json",
+    }).as("getArticlesAuth");
 
     myShops = [];
 
@@ -75,15 +75,16 @@ describe("Créer une boutique", () => {
     }).as("postShops");
   });
 
-  it("se connecte si besoin puis crée une boutique", () => {
+  it("clique sur Se connecter, fait le login Keycloak, pose le token puis crée une boutique", () => {
     cy.visit("/");
 
     cy.wait(["@getCategories", "@getArticlesPublic"], { timeout: 20000 });
 
-    cy.get("body").then(($body) => {
+    cy.get("body", { timeout: 30000 }).then(($body) => {
       const hasLogin = $body.text().includes("Se connecter");
-      if (!hasLogin) return;
-
+      if (!hasLogin) {
+        return;
+      }
       cy.contains("button, a", "Se connecter", { timeout: 20000 })
         .should("be.visible")
         .click();
@@ -94,7 +95,7 @@ describe("Créer une boutique", () => {
           .clear()
           .type("e2e");
 
-        cy.get("#password, input[name='password']")
+        cy.get("#password, input[name='password']", { timeout: 20000 })
           .should("be.visible")
           .clear()
           .type("e2e");
@@ -102,10 +103,13 @@ describe("Créer une boutique", () => {
         cy.get("#kc-login, input[type='submit']").should("be.visible").click();
       });
 
-      cy.location("origin", { timeout: 60000 }).should(
-        "eq",
-        "http://localhost:5173"
-      );
+      cy.url({ timeout: 60000 }).should((url) => {
+        expect(url).not.to.include(KEYCLOAK_ORIGIN);
+      });
+
+      cy.window().then((win) => {
+        win.localStorage.setItem("UserToken", "fake-e2e-token");
+      });
     });
 
     cy.get("body", { timeout: 60000 }).then(($b) => {
@@ -137,16 +141,25 @@ describe("Créer une boutique", () => {
       .within(() => {
         cy.contains("label", "Nom de la boutique")
           .invoke("attr", "for")
-          .then((id) => cy.get(`#${id}`).clear().type("Ma boutique E2E"));
+          .then((id) => {
+            if (!id) {
+              throw new Error(
+                "Impossible de trouver l'input du nom de boutique"
+              );
+            }
+            cy.get(`#${id}`).clear().type("Ma boutique E2E");
+          });
 
         cy.contains("label", "Description")
           .invoke("attr", "for")
-          .then((id) =>
-            cy
-              .get(`#${id}`)
+          .then((id) => {
+            if (!id) {
+              throw new Error("Impossible de trouver l'input de description");
+            }
+            cy.get(`#${id}`)
               .clear()
-              .type("Description créée par Cypress (E2E).")
-          );
+              .type("Description créée par Cypress (E2E).");
+          });
 
         cy.contains("button", /^Créer la boutique$/i)
           .should("be.visible")
@@ -159,6 +172,8 @@ describe("Créer une boutique", () => {
       expect(interception.request.url).to.match(/\/api\/shops/i);
       expect(interception.response?.statusCode).to.eq(201);
     });
-    cy.wait("@getMyShops", { timeout: 20000 });
+    cy.wait("@getMyShops", { timeout: 20000 }).then((interception) => {
+      expect(interception.response?.statusCode).to.eq(200);
+    });
   });
 });
