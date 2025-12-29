@@ -4,7 +4,7 @@ export default defineConfig({
   e2e: {
     baseUrl: "http://localhost:5173",
     supportFile: "cypress/support/e2e.ts",
-    video: false,
+    video: true,
     chromeWebSecurity: false,
     defaultCommandTimeout: 20000,
     pageLoadTimeout: 60000,
