@@ -5,6 +5,7 @@ let myShops: Array<{ id: number; name: string; description?: string }> = [];
 Cypress.on("uncaught:exception", (err) => {
   const msg = String(err);
 
+  // tu avais déjà ces exceptions ignorées
   if (msg.includes("@stripe/stripe-js")) return false;
   if (msg.includes("initStripe")) return false;
   if (msg.includes("Cannot read properties of undefined (reading 'match')"))
@@ -33,7 +34,7 @@ describe("Créer une boutique", () => {
       return true;
     });
 
-    // ---------- API mocks ----------
+    // --------- API mocks ---------
     cy.intercept("GET", "**/api/categories*", {
       fixture: "categories.json",
     }).as("getCategories");
@@ -41,11 +42,6 @@ describe("Créer une boutique", () => {
     cy.intercept("GET", "**/api/articles/public*", {
       fixture: "articles.json",
     }).as("getArticlesPublic");
-
-    cy.intercept("GET", "**/api/auth/me*", {
-      statusCode: 200,
-      body: { id: 1, username: "e2e", roles: ["USER"] },
-    }).as("getMe");
 
     cy.intercept("GET", "**/api/cart*", {
       statusCode: 200,
@@ -62,11 +58,17 @@ describe("Créer une boutique", () => {
       body: [],
     }).as("getNotifications");
 
+    // ⚠️ garde ton mock si tu veux, mais ton UI dépend visiblement du token Keycloak, pas de /me
+    cy.intercept("GET", "**/api/auth/me*", {
+      statusCode: 200,
+      body: { id: 1, username: "e2e", roles: ["USER"] },
+    }).as("getMe");
+
     cy.intercept("GET", "**/api/articles*", { fixture: "articles.json" }).as(
       "getArticlesAuth"
     );
 
-    // ---------- Shops mocks ----------
+    // --------- Shops mocks ---------
     myShops = [];
 
     cy.intercept("GET", "**/api/shops/my*", (req) => {
@@ -86,78 +88,79 @@ describe("Créer une boutique", () => {
       req.reply({ statusCode: 201, body: created });
     }).as("postShops");
 
-    // ---------- Keycloak intercept (IMPORTANT) ----------
-    // On track la requête auth Keycloak pour savoir si le clic lance bien le login
+    // --------- Keycloak AUTH intercept (indispensable) ---------
     cy.intercept("GET", "**/realms/**/protocol/openid-connect/auth*").as(
       "kcAuth"
     );
   });
 
-  it("se connecte si besoin puis crée une boutique", () => {
-    cy.visit("/");
+  function forceInteractiveKeycloakLogin() {
+    // 1) click sur "Se connecter"
+    cy.contains("button, a", "Se connecter", { timeout: 60000 })
+      .should("be.visible")
+      .click();
 
-    cy.wait(["@getCategories", "@getArticlesPublic"], { timeout: 60000 });
+    // 2) on récupère l’URL générée par ton app (souvent prompt=none)
+    cy.wait("@kcAuth", { timeout: 60000 }).then((i) => {
+      const raw = i.request.url;
+      const u = new URL(raw);
 
-    // Si "Se connecter" existe, on fait le flow Keycloak
-    cy.get("body").then(($body) => {
-      const hasLogin = $body.text().includes("Se connecter");
-      if (!hasLogin) return;
+      // ✅ on force l’affichage du formulaire
+      u.searchParams.set("prompt", "login");
 
-      // Force même onglet si l’app ouvre un popup (window.open)
-      cy.window().then((win) => {
-        cy.stub(win, "open").callsFake((url) => {
-          win.location.href = String(url);
-          return null;
-        });
-      });
+      // (optionnel) évite certains flows silencieux
+      // u.searchParams.delete("max_age");
 
-      cy.contains("button, a", "Se connecter", { timeout: 60000 })
-        .should("be.visible")
-        .then(($el) => {
-          // Force même onglet si c’est un lien target=_blank
-          if ($el.is("a")) cy.wrap($el).invoke("removeAttr", "target");
-        })
-        .click();
+      const loginUrl = u.toString();
+      cy.log("FORCED Keycloak login URL => " + loginUrl);
 
-      // 1) On attend que l’app appelle Keycloak (sinon: ton bouton ne lance pas Keycloak)
-      cy.wait("@kcAuth", { timeout: 60000 }).then((i) => {
-        cy.log("Keycloak auth url => " + i.request.url);
-      });
-
-      // 2) On attend d’être réellement sur l’origin Keycloak
-      cy.location("origin", { timeout: 60000 }).should("eq", KEYCLOAK_ORIGIN);
-
-      // 3) On remplit le formulaire Keycloak sur son origin
-      cy.origin(
-        KEYCLOAK_ORIGIN,
-        { args: { username: USERNAME, password: PASSWORD } },
-        ({ username, password }) => {
-          cy.get("#username, input[name='username']", { timeout: 60000 })
-            .should("be.visible")
-            .clear()
-            .type(username, { log: false });
-
-          cy.get("#password, input[name='password']", { timeout: 60000 })
-            .should("be.visible")
-            .clear()
-            .type(password, { log: false });
-
-          cy.get("#kc-login, input[type='submit']", { timeout: 60000 })
-            .should("be.visible")
-            .click();
-        }
-      );
-
-      // 4) Retour app
-      cy.location("origin", { timeout: 120000 }).should("eq", APP_ORIGIN);
+      // 3) on navigue VRAIMENT sur Keycloak (top-level), donc la page s’affiche
+      cy.visit(loginUrl);
     });
 
-    // ---------- Create shop ----------
+    // 4) on est bien sur l’origin keycloak
+    cy.location("origin", { timeout: 60000 }).should("eq", KEYCLOAK_ORIGIN);
+
+    // 5) on remplit le formulaire
+    cy.origin(
+      KEYCLOAK_ORIGIN,
+      { args: { username: USERNAME, password: PASSWORD } },
+      ({ username, password }) => {
+        cy.get("#username, input[name='username']", { timeout: 60000 })
+          .should("be.visible")
+          .clear()
+          .type(username, { log: false });
+
+        cy.get("#password, input[name='password']", { timeout: 60000 })
+          .should("be.visible")
+          .clear()
+          .type(password, { log: false });
+
+        cy.get("#kc-login, input[type='submit']", { timeout: 60000 })
+          .should("be.visible")
+          .click();
+      }
+    );
+
+    // 6) retour sur l’app
+    cy.location("origin", { timeout: 120000 }).should("eq", APP_ORIGIN);
+  }
+
+  it("se connecte si besoin puis crée une boutique", () => {
+    cy.visit("/");
+    cy.wait(["@getCategories", "@getArticlesPublic"], { timeout: 60000 });
+
+    // Si l’écran montre "Se connecter", on fait le vrai login Keycloak (non-silencieux)
+    cy.get("body").then(($body) => {
+      if ($body.text().includes("Se connecter")) {
+        forceInteractiveKeycloakLogin();
+      }
+    });
+
+    // Ensuite on continue le test métier
     cy.get("body", { timeout: 60000 }).then(($b) => {
       const hasCreate = /créer une boutique/i.test($b.text());
-      if (!hasCreate) {
-        cy.visit("/ShopManagement");
-      }
+      if (!hasCreate) cy.visit("/ShopManagement");
     });
 
     cy.contains("button, a", /Créer une boutique/i, { timeout: 60000 })
