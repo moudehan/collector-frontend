@@ -26,6 +26,18 @@
   "credentials": [
     { "type": "password", "value": "e2e", "temporary": false }
   ]
+},
+{
+  "username": "e2e2",
+  "enabled": true,
+  "email": "e2e2@example.com",
+  "emailVerified": true,
+  "firstName": "E2E2",
+  "lastName": "Tester2",
+  "requiredActions": [],
+  "credentials": [
+    { "type": "password", "value": "e2e2", "temporary": false }
+  ]
 }
   ]
 }
