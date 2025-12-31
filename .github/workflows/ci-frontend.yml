@@ -85,6 +85,20 @@ jobs:
           done
           echo "TIMEOUT front" && exit 1
 
+            - name: Debug - Keycloak URL inside frontend build
+          run: |
+          echo "Fetching index..."
+          curl -fsS http://localhost:5273/ | head -n 40 || true
+
+          echo "Looking for keycloak hostnames in served JS..."
+          # On récupère les assets référencés et on grep "keycloak"
+          ASSETS=$(curl -fsS http://localhost:5273/ | grep -oE 'src="[^"]+assets/[^"]+\.js"' | cut -d'"' -f2 | head -n 5)
+          for a in $ASSETS; do
+            echo "== $a =="
+            curl -fsS "http://localhost:5273$a" | grep -Eo '(https?://[^"]*keycloak[^"]*)|(keycloak-e2e:8080)|(localhost:8181)' | head || true
+          done
+
+
       - name: Wait for Keycloak on localhost
         run: |
           for i in {1..180}; do
