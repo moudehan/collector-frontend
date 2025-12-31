@@ -76,7 +76,7 @@ jobs:
       - name: Wait for Front on localhost
         run: |
           for i in {1..180}; do
-            if curl -fsS -o /dev/null http://localhost:5273/; then
+            if curl -fsS -o /dev/null http://localhost:5173/; then
               echo "Front ready on localhost"
               exit 0
             fi
@@ -84,20 +84,6 @@ jobs:
             sleep 1
           done
           echo "TIMEOUT front" && exit 1
-
-      - name: Debug - Keycloak URL inside frontend build
-        run: |
-          echo "Fetching index..."
-          curl -fsS http://localhost:5273/ | head -n 40 || true
-
-          echo "Looking for keycloak hostnames in served JS..."
-          # On récupère les assets référencés et on grep "keycloak"
-          ASSETS=$(curl -fsS http://localhost:5273/ | grep -oE 'src="[^"]+assets/[^"]+\.js"' | cut -d'"' -f2 | head -n 5)
-          for a in $ASSETS; do
-            echo "== $a =="
-            curl -fsS "http://localhost:5273$a" | grep -Eo '(https?://[^"]*keycloak[^"]*)|(keycloak-e2e:8080)|(localhost:8181)' | head || true
-          done
-
 
       - name: Wait for Keycloak on localhost
         run: |
@@ -113,7 +99,7 @@ jobs:
 
       - name: Run Cypress E2E on host (Electron OK)
         run: |
-          CYPRESS_baseUrl="http://localhost:5273" \
+          CYPRESS_baseUrl="http://localhost:5173" \
           CYPRESS_KEYCLOAK_ORIGIN="http://localhost:8181" \
           npx cypress run --browser electron --config-file cypress.config.ts
 
@@ -135,28 +121,6 @@ jobs:
         if: always()
         run: |
           docker compose -f docker-compose.e2e.yml down -v --remove-orphans
-
-      - name: Debug - containers status + logs
-        run: |
-          docker compose -f docker-compose.e2e.yml ps
-          echo "=== frontend-e2e logs (tail) ==="
-          docker compose -f docker-compose.e2e.yml logs --no-color --tail=200 frontend-e2e || true
-          echo "=== keycloak-e2e logs (tail) ==="
-          docker compose -f docker-compose.e2e.yml logs --no-color --tail=200 keycloak-e2e || true
-
-      - name: Debug - frontend container env (keycloak related)
-        run: |
-          CID=$(docker compose -f docker-compose.e2e.yml ps -q frontend-e2e)
-          echo "frontend-e2e container id: $CID"
-          docker inspect "$CID" --format '{{range .Config.Env}}{{println .}}{{end}}' | sort | grep -i -E 'keycloak|kc_|oidc|auth|vite' || true
-
-      - name: Debug - grep keycloak in served Vite modules
-        run: |
-          echo "=== /src/main.tsx (served) ==="
-          curl -fsS http://localhost:5273/src/main.tsx | sed -n '1,200p' || true
-
-          echo "=== grep keycloak-ish strings in served entry ==="
-          curl -fsS http://localhost:5273/src/main.tsx | grep -i -E 'keycloak|oidc|kc_|auth|realm|client' || true
 
 
   build:
