@@ -136,6 +136,28 @@ jobs:
         run: |
           docker compose -f docker-compose.e2e.yml down -v --remove-orphans
 
+      - name: Debug - containers status + logs
+        run: |
+          docker compose -f docker-compose.e2e.yml ps
+          echo "=== frontend-e2e logs (tail) ==="
+          docker compose -f docker-compose.e2e.yml logs --no-color --tail=200 frontend-e2e || true
+          echo "=== keycloak-e2e logs (tail) ==="
+          docker compose -f docker-compose.e2e.yml logs --no-color --tail=200 keycloak-e2e || true
+
+      - name: Debug - frontend container env (keycloak related)
+        run: |
+          CID=$(docker compose -f docker-compose.e2e.yml ps -q frontend-e2e)
+          echo "frontend-e2e container id: $CID"
+          docker inspect "$CID" --format '{{range .Config.Env}}{{println .}}{{end}}' | sort | grep -i -E 'keycloak|kc_|oidc|auth|vite' || true
+
+      - name: Debug - grep keycloak in served Vite modules
+        run: |
+          echo "=== /src/main.tsx (served) ==="
+          curl -fsS http://localhost:5273/src/main.tsx | sed -n '1,200p' || true
+
+          echo "=== grep keycloak-ish strings in served entry ==="
+          curl -fsS http://localhost:5273/src/main.tsx | grep -i -E 'keycloak|oidc|kc_|auth|realm|client' || true
+
 
   build:
     runs-on: ubuntu-latest
