@@ -85,8 +85,8 @@ jobs:
           done
           echo "TIMEOUT front" && exit 1
 
-            - name: Debug - Keycloak URL inside frontend build
-          run: |
+      - name: Debug - Keycloak URL inside frontend build
+        run: |
           echo "Fetching index..."
           curl -fsS http://localhost:5273/ | head -n 40 || true
 
