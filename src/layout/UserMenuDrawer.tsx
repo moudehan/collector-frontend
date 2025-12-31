@@ -47,7 +47,12 @@ export default function UserMenuDrawer({ open, onClose }: Props) {
   ];
 
   return (
-    <Drawer anchor="right" open={open} onClose={onClose}>
+    <Drawer
+      PaperProps={{ "data-cy": "user-drawer" }}
+      anchor="right"
+      open={open}
+      onClose={onClose}
+    >
       <Box
         sx={{
           width: 280,

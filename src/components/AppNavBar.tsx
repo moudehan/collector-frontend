@@ -219,7 +219,7 @@ export default function AppNavbar() {
             <FavoriteBorderIcon />
             <LanguageIcon />
             {user && (
-              <IconButton onClick={toggleDrawer}>
+              <IconButton onClick={toggleDrawer} data-cy="open-user-drawer">
                 <Avatar>{user.userName?.[0]?.toUpperCase() ?? "U"}</Avatar>
               </IconButton>
             )}

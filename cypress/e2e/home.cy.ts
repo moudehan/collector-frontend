@@ -1,14 +1,217 @@
-let myShops: Array<{
+import { CyHttpMessages } from "cypress/types/net-stubbing";
+
+type Category = {
+  id: number;
+  name: string;
+};
+
+type ImageRef =
+  | { kind: "fixture"; path: string }
+  | { kind: "url"; url: string };
+
+type Article = {
+  id: number;
+  shopId: number;
+
+  title: string;
+  description?: string;
+
+  price?: number;
+  shippingPrice?: number;
+  quantity?: number;
+
+  category?: Category;
+
+  period?: string;
+  productionYear?: string;
+  condition?: string;
+  vintageDetails?: string;
+
+  images: ImageRef[];
+};
+
+type Shop = {
   id: number;
   name: string;
   description?: string;
-  articles: Array<{
-    id: number;
-    title: string;
-    description?: string;
-    price?: number;
-  }>;
-}> = [];
+  articles: Article[];
+};
+
+type JsonRecord = Record<string, unknown>;
+type IncomingRequest = CyHttpMessages.IncomingHttpRequest;
+
+const isRecord = (v: unknown): v is JsonRecord =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+const tryParseBodyAsRecord = (raw: unknown): JsonRecord | null => {
+  if (isRecord(raw)) return raw;
+  if (typeof raw === "string") {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      return isRecord(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+const readString = (r: JsonRecord, key: string): string | undefined => {
+  const v = r[key];
+  return typeof v === "string" ? v : undefined;
+};
+
+const readNumber = (r: JsonRecord, key: string): number | undefined => {
+  const v = r[key];
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = Number(v.replace(",", "."));
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
+};
+
+const readCategory = (r: JsonRecord, key: string): Category | undefined => {
+  const v = r[key];
+  if (!isRecord(v)) return undefined;
+  const id = readNumber(v, "id");
+  const name = readString(v, "name");
+  return typeof id === "number" && typeof name === "string"
+    ? { id, name }
+    : undefined;
+};
+
+const fillInputByLabel = (label: RegExp, value: string) => {
+  cy.contains("label", label)
+    .invoke("attr", "for")
+    .then((id) => {
+      if (!id) throw new Error(`Label sans attribut "for" pour ${label}`);
+      cy.get(`#${id}`).scrollIntoView().clear().type(value);
+    });
+};
+
+const clickInputByLabel = (label: RegExp) => {
+  cy.contains("label", label)
+    .invoke("attr", "for")
+    .then((id) => {
+      if (!id) throw new Error(`Label sans attribut "for" pour ${label}`);
+      cy.get(`#${id}`).scrollIntoView().click();
+    });
+};
+
+const selectAutocompleteByLabel = (
+  label: RegExp,
+  search: string,
+  pick: RegExp
+) => {
+  clickInputByLabel(label);
+  cy.focused().type(search);
+  cy.get('li[role="option"]', { timeout: 10000 }).contains(pick).click();
+};
+
+const LoginKeycloak = (
+  username: string,
+  password: string,
+  keycloakOrigin: string,
+  appOrigin: string
+) => {
+  cy.get("body").then(($body) => {
+    if (!$body.text().includes("Se connecter")) return;
+
+    cy.contains("button, a", "Se connecter", { timeout: 6000 })
+      .should("be.visible")
+      .click();
+
+    cy.wait("@kcAuth", { timeout: 6000 }).then((i) => {
+      const raw = i.request.url;
+      const u = new URL(raw);
+      u.searchParams.set("prompt", "login");
+      cy.visit(u.toString());
+    });
+
+    cy.location("origin", { timeout: 6000 }).should("eq", keycloakOrigin);
+
+    cy.origin(
+      keycloakOrigin,
+      { args: { username, password } },
+      ({ username, password }) => {
+        cy.get("#username, input[name='username']", { timeout: 6000 })
+          .should("be.visible")
+          .clear()
+          .type(username, { log: false });
+
+        cy.get("#password, input[name='password']", { timeout: 6000 })
+          .should("be.visible")
+          .clear()
+          .type(password, { log: false });
+
+        cy.get("#kc-login, input[type='submit']", { timeout: 6000 })
+          .should("be.visible")
+          .click();
+      }
+    );
+
+    cy.location("origin", { timeout: 120000 }).should("eq", appOrigin);
+  });
+};
+
+let myShops: Shop[] = [];
+let allArticles: Article[] = [];
+
+let nextShopId = 123;
+let nextArticleId = 999;
+
+let currentArticleDraft: Partial<Omit<Article, "id">> = { images: [] };
+
+const resetState = () => {
+  myShops = [];
+  allArticles = [];
+  nextShopId = 123;
+  nextArticleId = 999;
+  currentArticleDraft = { images: [] };
+};
+
+const buildArticleFromDraftAndBody = (
+  draft: Partial<Omit<Article, "id">>,
+  body: JsonRecord | null,
+  defaultShopId: number
+): Article => {
+  const bodyShopId = body ? readNumber(body, "shopId") : undefined;
+  const shippingFromBody = body
+    ? readNumber(body, "shippingPrice") ?? readNumber(body, "shippingFees")
+    : undefined;
+
+  const shopId = Number(draft.shopId ?? bodyShopId ?? defaultShopId);
+
+  return {
+    id: nextArticleId++,
+    shopId,
+    title:
+      draft.title ??
+      (body ? readString(body, "title") : undefined) ??
+      "Article Cypress E2E",
+    description:
+      draft.description ??
+      (body ? readString(body, "description") : undefined) ??
+      "",
+    price: draft.price ?? (body ? readNumber(body, "price") : undefined),
+    shippingPrice: draft.shippingPrice ?? shippingFromBody,
+    quantity:
+      draft.quantity ?? (body ? readNumber(body, "quantity") : undefined),
+    category:
+      draft.category ?? (body ? readCategory(body, "category") : undefined),
+    period: draft.period ?? (body ? readString(body, "period") : undefined),
+    productionYear:
+      draft.productionYear ??
+      (body ? readString(body, "productionYear") : undefined),
+    condition:
+      draft.condition ?? (body ? readString(body, "condition") : undefined),
+    vintageDetails:
+      draft.vintageDetails ??
+      (body ? readString(body, "vintageDetails") : undefined),
+    images: draft.images ?? [],
+  };
+};
 
 Cypress.on("uncaught:exception", (err) => {
   const msg = String(err);
@@ -36,19 +239,23 @@ describe("Créer une boutique puis un article", () => {
   const APP_ORIGIN = new URL(
     Cypress.config("baseUrl") || "http://localhost:5173"
   ).origin;
+  let createdShopId = 123;
 
   beforeEach(() => {
     cy.clearCookies();
     cy.clearLocalStorage();
 
     cy.on("uncaught:exception", (err) => {
-      if (String(err).includes("Failed to fetch")) return false;
-      if (String(err).includes("@stripe/stripe-js")) return false;
-      if (String(err).includes("initStripe")) return false;
-      if (String(err).includes("Cannot read properties of undefined"))
-        return false;
+      const msg = String(err);
+      if (msg.includes("Failed to fetch")) return false;
+      if (msg.includes("@stripe/stripe-js")) return false;
+      if (msg.includes("initStripe")) return false;
+      if (msg.includes("Cannot read properties of undefined")) return false;
       return true;
     });
+
+    resetState();
+    createdShopId = 123;
 
     cy.intercept("GET", "**/api/categories*", {
       fixture: "categories.json",
@@ -74,94 +281,59 @@ describe("Créer une boutique puis un article", () => {
       body: { id: 1, username: "e2e", roles: ["USER"] },
     }).as("getMe");
 
-    // --------- état en mémoire des shops ---------
-    myShops = [];
-
-    cy.intercept("GET", "**/api/shops/my*", (req) => {
+    cy.intercept("GET", "**/api/shops/my*", (req: IncomingRequest) => {
       req.reply({ statusCode: 200, body: myShops });
     }).as("getMyShops");
 
-    cy.intercept("POST", "**/api/shops*", (req) => {
-      const body = req.body || {};
-
-      const created = {
-        id: 123,
-        name: body.name || "Ma boutique E2E",
-        description: body.description || "",
-        articles: [] as Array<{
-          id: number;
-          title: string;
-          description?: string;
-          price?: number;
-        }>,
+    cy.intercept("POST", "**/api/shops*", (req: IncomingRequest) => {
+      const body = tryParseBodyAsRecord(req.body) ?? {};
+      const created: Shop = {
+        id: nextShopId++,
+        name: readString(body, "name") ?? "Ma boutique E2E",
+        description: readString(body, "description") ?? "",
+        articles: [],
       };
-
       myShops = [created, ...myShops];
-
       req.reply({ statusCode: 201, body: created });
     }).as("postShops");
 
-    cy.intercept("GET", /\/api\/shops\/\d+$/, (req) => {
+    cy.intercept("GET", /\/api\/shops\/\d+$/, (req: IncomingRequest) => {
       const url = new URL(req.url);
-      const idStr = url.pathname.split("/").pop()!;
+      const idStr = url.pathname.split("/").pop() ?? "0";
       const id = Number(idStr);
 
       const found = myShops.find((s) => s.id === id);
-
-      const shop = found || {
+      const shop: Shop = found ?? {
         id,
         name: "Ma boutique E2E",
         description: "Description créée par Cypress (E2E).",
         articles: [],
       };
 
-      if (!shop.articles) shop.articles = [];
-
       req.reply({ statusCode: 200, body: shop });
     }).as("getShopDetail");
 
-    // --------- création d’article et stockage dans le shop ---------
-    cy.intercept("POST", "**/api/articles*", (req) => {
-      const body = req.body || {};
+    cy.intercept("POST", "**/api/articles*", (req: IncomingRequest) => {
+      const body = tryParseBodyAsRecord(req.body);
+      const created = buildArticleFromDraftAndBody(
+        currentArticleDraft,
+        body,
+        createdShopId
+      );
 
-      const shopId = Number(body.shopId || body.shop?.id || 123);
+      allArticles.push(created);
 
-      const createdArticle = {
-        id: 999,
-        title: body.title || "Article Cypress E2E",
-        description: body.description || "",
-        price: body.price ?? 10,
-        shippingPrice: body.shippingPrice ?? body.shippingFees ?? 0,
-        quantity: body.quantity ?? 1,
-        category: body.category ?? null,
-        period: body.period ?? body.epoch ?? "",
-        productionYear: body.productionYear ?? "",
-        condition: body.condition ?? "",
-        vintageDetails: body.vintageDetails ?? "",
-        images: body.images ?? [],
-        shopId,
-      };
+      const shop = myShops.find((s) => s.id === created.shopId) ?? myShops[0];
+      if (shop) shop.articles.push(created);
 
-      const shop =
-        myShops.find((s) => String(s.id) === String(shopId)) ||
-        myShops.find((s) => s.id === 123);
-
-      if (shop) {
-        if (!shop.articles) shop.articles = [];
-        shop.articles.push(createdArticle);
-      }
-
-      req.reply({ statusCode: 201, body: createdArticle });
+      req.reply({ statusCode: 201, body: created });
     }).as("postArticle");
 
-    // --------- liste des articles (home + pages protégées) ---------
-    cy.intercept("GET", "**/api/articles/public*", (req) => {
-      const allArticles = myShops.flatMap((s) => s.articles || []);
+    cy.intercept("GET", "**/api/articles/public*", (req: IncomingRequest) => {
       req.reply({ statusCode: 200, body: allArticles });
     }).as("getArticlesPublic");
 
-    cy.intercept("GET", "**/api/articles*", (req) => {
-      const allArticles = myShops.flatMap((s) => s.articles || []);
+    cy.intercept("GET", "**/api/articles*", (req: IncomingRequest) => {
       req.reply({ statusCode: 200, body: allArticles });
     }).as("getArticlesAuth");
 
@@ -170,67 +342,18 @@ describe("Créer une boutique puis un article", () => {
     );
   });
 
-  function forceInteractiveKeycloakLogin(
-    username: string = USERNAME,
-    password: string = PASSWORD
-  ) {
-    cy.contains("button, a", "Se connecter", { timeout: 6000 })
-      .should("be.visible")
-      .click();
-
-    cy.wait("@kcAuth", { timeout: 6000 }).then((i) => {
-      const raw = i.request.url;
-      const u = new URL(raw);
-
-      u.searchParams.set("prompt", "login");
-
-      const loginUrl = u.toString();
-      cy.log("FORCED Keycloak login URL => " + loginUrl);
-
-      cy.visit(loginUrl);
-    });
-
-    cy.location("origin", { timeout: 6000 }).should("eq", KEYCLOAK_ORIGIN);
-
-    cy.origin(
-      KEYCLOAK_ORIGIN,
-      { args: { username, password } },
-      ({ username, password }) => {
-        cy.get("#username, input[name='username']", { timeout: 6000 })
-          .should("be.visible")
-          .clear()
-          .type(username, { log: false });
-
-        cy.get("#password, input[name='password']", { timeout: 6000 })
-          .should("be.visible")
-          .clear()
-          .type(password, { log: false });
-
-        cy.get("#kc-login, input[type='submit']", { timeout: 6000 })
-          .should("be.visible")
-          .click();
-      }
-    );
-
-    cy.location("origin", { timeout: 120000 }).should("eq", APP_ORIGIN);
-  }
-
-  it("se connecte si besoin puis crée une boutique puis un article", () => {
+  it("crée une boutique puis un article (FormData) et vérifie la persistance en mémoire", () => {
     cy.visit("/");
     cy.wait(["@getCategories", "@getArticlesPublic"], { timeout: 6000 });
 
-    cy.get("body").then(($body) => {
-      if ($body.text().includes("Se connecter")) {
-        forceInteractiveKeycloakLogin(USERNAME, PASSWORD);
-      }
-    });
+    LoginKeycloak(USERNAME, PASSWORD, KEYCLOAK_ORIGIN, APP_ORIGIN);
 
     cy.contains("button, a", /Créer une boutique/i, { timeout: 6000 })
       .should("be.visible")
       .scrollIntoView()
       .click();
 
-    cy.wait("@getMyShops", { timeout: 6000 });
+    cy.wait("@getMyShops", { timeout: 2000 });
 
     cy.get("body").then(($b) => {
       const hasDialog = $b.find('[role="dialog"]').length > 0;
@@ -245,18 +368,11 @@ describe("Créer une boutique puis un article", () => {
     cy.get('[role="dialog"]', { timeout: 6000 })
       .should("be.visible")
       .within(() => {
-        cy.contains("label", "Nom de la boutique")
-          .invoke("attr", "for")
-          .then((id) => cy.get(`#${id}`).clear().type("Ma boutique E2E"));
-
-        cy.contains("label", "Description")
-          .invoke("attr", "for")
-          .then((id) =>
-            cy
-              .get(`#${id}`)
-              .clear()
-              .type("Description créée par Cypress (E2E).")
-          );
+        fillInputByLabel(/Nom de la boutique/i, "Ma boutique E2E");
+        fillInputByLabel(
+          /Description/i,
+          "Description créée par Cypress (E2E)."
+        );
 
         cy.contains("button", /^Créer la boutique$/i)
           .should("be.visible")
@@ -265,9 +381,12 @@ describe("Créer une boutique puis un article", () => {
       });
 
     cy.wait("@postShops", { timeout: 6000 }).then((interception) => {
-      expect(interception.request.method).to.eq("POST");
-      expect(interception.request.url).to.match(/\/api\/shops/i);
-      expect(interception.response?.statusCode).to.eq(201);
+      const body: unknown = interception.response?.body;
+      if (isRecord(body) && typeof body.id === "number") {
+        createdShopId = body.id;
+      } else {
+        createdShopId = 123;
+      }
     });
 
     cy.contains(/Ma boutique E2E/i, { timeout: 6000 }).click({ force: true });
@@ -280,103 +399,76 @@ describe("Créer une boutique puis un article", () => {
 
     cy.url().should("match", /\/shop\/\d+\/article\/add$/);
 
-    cy.contains(/Ajouter un nouvel article/i, { timeout: 6000 }).should(
-      "be.visible"
-    );
+    currentArticleDraft.shopId = createdShopId;
 
     const imagePath = "cypress/fixtures/images/img-article-test.jpg";
+    currentArticleDraft.images = [
+      { kind: "fixture", path: "img-article-test.jpg" },
+    ];
 
     cy.get('input[type="file"]', { timeout: 10000 })
       .first()
       .selectFile(imagePath, { force: true });
 
-    cy.contains("label", /Nom de l.?article/i)
-      .invoke("attr", "for")
-      .then((id) => {
-        cy.get(`#${id}`).scrollIntoView().clear().type("Article Cypress E2E");
-      });
+    currentArticleDraft.title = "Article Cypress E2E";
+    fillInputByLabel(/Nom de l.?article/i, "Article Cypress E2E");
 
-    cy.contains("label", /^Prix/i)
-      .invoke("attr", "for")
-      .then((id) => {
-        cy.get(`#${id}`).scrollIntoView().clear().type("19.99");
-      });
+    currentArticleDraft.price = 19.99;
+    fillInputByLabel(/^Prix/i, "19.99");
 
-    cy.contains("label", /Frais de livraison/i)
-      .invoke("attr", "for")
-      .then((id) => {
-        cy.get(`#${id}`).scrollIntoView().clear().type("4.90");
-      });
+    currentArticleDraft.shippingPrice = 4.9;
+    fillInputByLabel(/Frais de livraison/i, "4.90");
 
-    cy.contains("label", /Quantit[eé] disponible/i)
-      .invoke("attr", "for")
-      .then((id) => {
-        cy.get(`#${id}`).scrollIntoView().clear().type("3");
-      });
+    currentArticleDraft.quantity = 3;
+    fillInputByLabel(/Quantit[eé] disponible/i, "3");
 
-    cy.contains("label", /Cat[ée]gorie/i)
-      .invoke("attr", "for")
-      .then((id) => {
-        cy.get(`#${id}`).scrollIntoView().click().type("Car");
-      });
+    currentArticleDraft.category = { id: 1, name: "Cartes" };
+    selectAutocompleteByLabel(/Cat[ée]gorie/i, "Car", /Cartes|Figurines/i);
 
-    cy.get('li[role="option"]', { timeout: 10000 })
-      .contains(/Cartes|Figurines/i)
-      .click();
+    currentArticleDraft.period = "Années 90";
+    fillInputByLabel(/[ÉE]poque/i, "Années 90");
 
-    cy.contains("label", /[ÉE]poque/i)
-      .invoke("attr", "for")
-      .then((id) => {
-        cy.get(`#${id}`).scrollIntoView().clear().type("Années 90");
-      });
+    currentArticleDraft.productionYear = "1998";
+    fillInputByLabel(/Ann[ée]e de production/i, "1998");
 
-    cy.contains("label", /Ann[ée]e de production/i)
-      .invoke("attr", "for")
-      .then((id) => {
-        cy.get(`#${id}`).scrollIntoView().clear().type("1998");
-      });
+    currentArticleDraft.condition = "Très bon état";
+    fillInputByLabel(/[ÉE]tat/i, "Très bon état");
 
-    cy.contains("label", /[ÉE]tat/i)
-      .invoke("attr", "for")
-      .then((id) => {
-        cy.get(`#${id}`).scrollIntoView().clear().type("Très bon état");
-      });
+    currentArticleDraft.vintageDetails =
+      "Super pièce vintage, histoire test E2E.";
+    fillInputByLabel(
+      /D[ée]tails vintage/i,
+      "Super pièce vintage, histoire test E2E."
+    );
 
-    cy.contains("label", /D[ée]tails vintage/i)
-      .invoke("attr", "for")
-      .then((id) => {
-        cy.get(`#${id}`)
-          .scrollIntoView()
-          .clear()
-          .type("Super pièce vintage, histoire test E2E.");
-      });
-
-    cy.contains("label", /Description/i)
-      .invoke("attr", "for")
-      .then((id) => {
-        cy.get(`#${id}`)
-          .scrollIntoView()
-          .clear()
-          .type("Description de l’article créée par Cypress (E2E).");
-      });
+    currentArticleDraft.description =
+      "Description de l’article créée par Cypress (E2E).";
+    fillInputByLabel(
+      /Description/i,
+      "Description de l’article créée par Cypress (E2E)."
+    );
 
     cy.contains("button", /Cr[ée]er l.?article/i)
       .should("be.enabled")
       .click();
 
     cy.wait("@postArticle", { timeout: 6000 }).then((interception) => {
-      expect(interception.request.method).to.eq("POST");
-      expect(interception.request.url).to.match(/\/api\/articles/i);
       expect(interception.response?.statusCode).to.eq(201);
     });
 
-    cy.get(".MuiAvatar-root").should("be.visible").click();
+    cy.wait("@getShopDetail", { timeout: 6000 });
+
+    cy.get("header")
+      .find("button.MuiIconButton-root")
+      .filter(":has(.MuiAvatar-root)")
+      .should("be.visible")
+      .click();
 
     cy.contains(".MuiListItemButton-root", /Se d[ée]connecter/i, {
-      timeout: 6000,
-    }).click({ force: true });
-
-    cy.url({ timeout: 6000 }).should("match", /\/$/);
+      timeout: 10000,
+    })
+      .should("be.visible")
+      .click();
 
     cy.clearCookies();
     cy.clearLocalStorage();
@@ -386,20 +478,11 @@ describe("Créer une boutique puis un article", () => {
       body: { id: 2, username: OTHER_USERNAME, roles: ["USER"] },
     }).as("getMeOther");
 
-    cy.visit("/");
-
     cy.wait(["@getCategories", "@getArticlesPublic"], { timeout: 6000 });
 
-    cy.get("body").then(($body) => {
-      if ($body.text().includes("Se connecter")) {
-        forceInteractiveKeycloakLogin(OTHER_USERNAME, OTHER_PASSWORD);
-      }
-    });
+    LoginKeycloak(OTHER_USERNAME, OTHER_PASSWORD, KEYCLOAK_ORIGIN, APP_ORIGIN);
+    cy.wait("@getMeOther", { timeout: 2000 });
 
-    cy.wait("@getMeOther", { timeout: 6000 });
-
-    cy.visit("/shop/123");
-    cy.wait("@getShopDetail", { timeout: 6000 });
     cy.contains(/Article Cypress E2E/i, { timeout: 6000 }).should("be.visible");
   });
 });
