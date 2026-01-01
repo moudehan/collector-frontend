@@ -25,6 +25,16 @@ spec:
           ports:
             - containerPort: 80
 
+          env:
+            - name: VITE_API_URL
+              value: "http://api:4000"
+            - name: VITE_KEYCLOAK_URL
+              value: "http://dummy"
+            - name: VITE_KEYCLOAK_REALM
+              value: "collector"
+            - name: VITE_KEYCLOAK_CLIENT_ID
+              value: "collector-frontend"
+
           readinessProbe:
             httpGet:
               path: /healthz
@@ -38,16 +48,6 @@ spec:
               port: 80
             initialDelaySeconds: 10
             periodSeconds: 10
-
-            env:
-            - name: VITE_API_URL
-              value: "http://api:4000"
-            - name: VITE_KEYCLOAK_URL
-              value: "http://dummy"
-            - name: VITE_KEYCLOAK_REALM
-              value: "collector"
-            - name: VITE_KEYCLOAK_CLIENT_ID
-              value: "collector-frontend"
 ---
 apiVersion: v1
 kind: Service
