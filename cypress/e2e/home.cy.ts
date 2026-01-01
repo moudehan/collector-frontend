@@ -115,45 +115,67 @@ const LoginKeycloak = (
   keycloakOrigin: string,
   appOrigin: string
 ) => {
-  cy.get("body", { timeout: 20000 }).then(($body) => {
-    const $btn = $body
+  const CONNECT_RE = /Se connecter/i;
+
+  const findConnectBtn = ($body: JQuery<HTMLElement>) =>
+    $body
       .find("button, a")
-      .filter((_, el) => /Se connecter/i.test(el.textContent ?? ""));
+      .filter((_, el) => CONNECT_RE.test(el.textContent ?? ""));
 
-    if (!$btn.length) return;
-
-    cy.wrap($btn.first()).should("be.visible").click();
-
-    cy.wait("@kcAuth", { timeout: 20000 }).then((i) => {
-      const u = new URL(i.request.url);
-      u.searchParams.set("prompt", "login");
-      cy.visit(u.toString());
-    });
-
-    cy.location("origin", { timeout: 20000 }).should("eq", keycloakOrigin);
-
-    cy.origin(
-      keycloakOrigin,
-      { args: { username, password } },
-      ({ username, password }) => {
-        cy.get("#username, input[name='username']", { timeout: 20000 })
-          .should("be.visible")
-          .clear()
-          .type(username, { log: false });
-
-        cy.get("#password, input[name='password']", { timeout: 20000 })
-          .should("be.visible")
-          .clear()
-          .type(password, { log: false });
-
-        cy.get("#kc-login, input[type='submit']", { timeout: 20000 })
-          .should("be.visible")
-          .click();
-      }
+  const isLoggedInUI = ($body: JQuery<HTMLElement>) => {
+    return (
+      $body.find("button.MuiIconButton-root:has(.MuiAvatar-root)").length > 0 ||
+      $body.find('[aria-label*="compte" i]').length > 0 ||
+      $body.find('[data-testid="user-menu"]').length > 0
     );
+  };
 
-    cy.location("origin", { timeout: 120000 }).should("eq", appOrigin);
-  });
+  cy.get("body", { timeout: 20000 })
+    .should(($body) => {
+      const hasConnect = findConnectBtn($body).length > 0;
+      const logged = isLoggedInUI($body);
+      expect(
+        hasConnect || logged,
+        "Attente: bouton 'Se connecter' OU UI connectée"
+      ).to.eq(true);
+    })
+    .then(($body) => {
+      const $btn = findConnectBtn($body);
+
+      if (!$btn.length) return;
+
+      cy.wrap($btn.first()).scrollIntoView().should("be.visible").click();
+
+      cy.wait("@kcAuth", { timeout: 20000 }).then((i) => {
+        const u = new URL(i.request.url);
+        u.searchParams.set("prompt", "login");
+        cy.visit(u.toString());
+      });
+
+      cy.location("origin", { timeout: 20000 }).should("eq", keycloakOrigin);
+
+      cy.origin(
+        keycloakOrigin,
+        { args: { username, password } },
+        ({ username, password }) => {
+          cy.get("#username, input[name='username']", { timeout: 20000 })
+            .should("be.visible")
+            .clear()
+            .type(username, { log: false });
+
+          cy.get("#password, input[name='password']", { timeout: 20000 })
+            .should("be.visible")
+            .clear()
+            .type(password, { log: false });
+
+          cy.get("#kc-login, input[type='submit']", { timeout: 20000 })
+            .should("be.visible")
+            .click();
+        }
+      );
+
+      cy.location("origin", { timeout: 120000 }).should("eq", appOrigin);
+    });
 };
 
 let myShops: Shop[] = [];
