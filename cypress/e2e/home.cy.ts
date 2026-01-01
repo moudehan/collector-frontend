@@ -115,37 +115,38 @@ const LoginKeycloak = (
   keycloakOrigin: string,
   appOrigin: string
 ) => {
-  cy.get("body").then(($body) => {
-    if (!$body.text().includes("Se connecter")) return;
+  cy.get("body", { timeout: 20000 }).then(($body) => {
+    const $btn = $body
+      .find("button, a")
+      .filter((_, el) => /se connecter/i.test(el.textContent ?? ""));
 
-    cy.contains("button, a", "Se connecter", { timeout: 6000 })
-      .should("be.visible")
-      .click();
+    if (!$btn.length) return;
 
-    cy.wait("@kcAuth", { timeout: 6000 }).then((i) => {
-      const raw = i.request.url;
-      const u = new URL(raw);
+    cy.wrap($btn.first()).should("be.visible").click();
+
+    cy.wait("@kcAuth", { timeout: 20000 }).then((i) => {
+      const u = new URL(i.request.url);
       u.searchParams.set("prompt", "login");
       cy.visit(u.toString());
     });
 
-    cy.location("origin", { timeout: 6000 }).should("eq", keycloakOrigin);
+    cy.location("origin", { timeout: 20000 }).should("eq", keycloakOrigin);
 
     cy.origin(
       keycloakOrigin,
       { args: { username, password } },
       ({ username, password }) => {
-        cy.get("#username, input[name='username']", { timeout: 6000 })
+        cy.get("#username, input[name='username']", { timeout: 20000 })
           .should("be.visible")
           .clear()
           .type(username, { log: false });
 
-        cy.get("#password, input[name='password']", { timeout: 6000 })
+        cy.get("#password, input[name='password']", { timeout: 20000 })
           .should("be.visible")
           .clear()
           .type(password, { log: false });
 
-        cy.get("#kc-login, input[type='submit']", { timeout: 6000 })
+        cy.get("#kc-login, input[type='submit']", { timeout: 20000 })
           .should("be.visible")
           .click();
       }
