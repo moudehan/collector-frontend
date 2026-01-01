@@ -109,73 +109,47 @@ const selectAutocompleteByLabel = (
   cy.get('li[role="option"]', { timeout: 10000 }).contains(pick).click();
 };
 
+const clickSeConnecter = () => {
+  cy.contains("button, a", /Se connecter/i, { timeout: 30000 })
+    .should("be.visible")
+    .scrollIntoView()
+    .click();
+};
 const LoginKeycloak = (
   username: string,
   password: string,
   keycloakOrigin: string,
   appOrigin: string
 ) => {
-  const CONNECT_RE = /Se connecter/i;
+  cy.wait("@kcAuth", { timeout: 30000 }).then((i) => {
+    const u = new URL(i.request.url);
+    u.searchParams.set("prompt", "login");
+    cy.visit(u.toString());
+  });
 
-  const findConnectBtn = ($body: JQuery<HTMLElement>) =>
-    $body
-      .find("button, a")
-      .filter((_, el) => CONNECT_RE.test(el.textContent ?? ""));
+  cy.location("origin", { timeout: 30000 }).should("eq", keycloakOrigin);
 
-  const isLoggedInUI = ($body: JQuery<HTMLElement>) => {
-    return (
-      $body.find("button.MuiIconButton-root:has(.MuiAvatar-root)").length > 0 ||
-      $body.find('[aria-label*="compte" i]').length > 0 ||
-      $body.find('[data-testid="user-menu"]').length > 0
-    );
-  };
+  cy.origin(
+    keycloakOrigin,
+    { args: { username, password } },
+    ({ username, password }) => {
+      cy.get("#username, input[name='username']", { timeout: 30000 })
+        .should("be.visible")
+        .clear()
+        .type(username, { log: false });
 
-  cy.get("body", { timeout: 20000 })
-    .should(($body) => {
-      const hasConnect = findConnectBtn($body).length > 0;
-      const logged = isLoggedInUI($body);
-      expect(
-        hasConnect || logged,
-        "Attente: bouton 'Se connecter' OU UI connectée"
-      ).to.eq(true);
-    })
-    .then(($body) => {
-      const $btn = findConnectBtn($body);
+      cy.get("#password, input[name='password']", { timeout: 30000 })
+        .should("be.visible")
+        .clear()
+        .type(password, { log: false });
 
-      if (!$btn.length) return;
+      cy.get("#kc-login, input[type='submit']", { timeout: 30000 })
+        .should("be.visible")
+        .click();
+    }
+  );
 
-      cy.wrap($btn.first()).scrollIntoView().should("be.visible").click();
-
-      cy.wait("@kcAuth", { timeout: 20000 }).then((i) => {
-        const u = new URL(i.request.url);
-        u.searchParams.set("prompt", "login");
-        cy.visit(u.toString());
-      });
-
-      cy.location("origin", { timeout: 20000 }).should("eq", keycloakOrigin);
-
-      cy.origin(
-        keycloakOrigin,
-        { args: { username, password } },
-        ({ username, password }) => {
-          cy.get("#username, input[name='username']", { timeout: 20000 })
-            .should("be.visible")
-            .clear()
-            .type(username, { log: false });
-
-          cy.get("#password, input[name='password']", { timeout: 20000 })
-            .should("be.visible")
-            .clear()
-            .type(password, { log: false });
-
-          cy.get("#kc-login, input[type='submit']", { timeout: 20000 })
-            .should("be.visible")
-            .click();
-        }
-      );
-
-      cy.location("origin", { timeout: 120000 }).should("eq", appOrigin);
-    });
+  cy.location("origin", { timeout: 120000 }).should("eq", appOrigin);
 };
 
 let myShops: Shop[] = [];
@@ -369,6 +343,7 @@ describe("Créer une boutique puis un article", () => {
     cy.visit("/");
     cy.wait(["@getCategories", "@getArticlesPublic"], { timeout: 6000 });
 
+    clickSeConnecter();
     LoginKeycloak(USERNAME, PASSWORD, KEYCLOAK_ORIGIN, APP_ORIGIN);
 
     cy.contains("button, a", /Créer une boutique/i, { timeout: 6000 })
@@ -503,6 +478,7 @@ describe("Créer une boutique puis un article", () => {
 
     cy.wait(["@getCategories", "@getArticlesPublic"], { timeout: 6000 });
 
+    clickSeConnecter();
     LoginKeycloak(OTHER_USERNAME, OTHER_PASSWORD, KEYCLOAK_ORIGIN, APP_ORIGIN);
     cy.wait("@getMeOther", { timeout: 2000 });
 
