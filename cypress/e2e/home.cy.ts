@@ -118,7 +118,7 @@ const LoginKeycloak = (
   cy.get("body", { timeout: 20000 }).then(($body) => {
     const $btn = $body
       .find("button, a")
-      .filter((_, el) => /se connecter/i.test(el.textContent ?? ""));
+      .filter((_, el) => /Se connecter/i.test(el.textContent ?? ""));
 
     if (!$btn.length) return;
 
