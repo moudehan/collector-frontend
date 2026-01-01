@@ -8,4 +8,9 @@ export default defineConfig(() => ({
     port: 5173,
     allowedHosts: ["collector.shop", "localhost", "frontend-e2e"],
   },
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: "./src/setupTests.ts",
+  },
 }));

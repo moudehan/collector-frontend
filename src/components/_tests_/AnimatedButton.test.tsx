@@ -1,4 +1,5 @@
-import "@testing-library/jest-dom";
+/* @vitest-environment jsdom */
+import "@testing-library/jest-dom/vitest";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import AnimatedButton from "../Button";
