@@ -88,7 +88,7 @@ jobs:
       - name: Wait for Keycloak on localhost
         run: |
           for i in {1..180}; do
-            if curl -fsS -o /dev/null http://localhost:8181/realms/collector-e2e/.well-known/openid-configuration; then
+            if curl -fsS -o /dev/null http://localhost:8080/realms/collector-e2e/.well-known/openid-configuration; then
               echo "Keycloak ready on localhost"
               exit 0
             fi
@@ -100,7 +100,7 @@ jobs:
       - name: Run Cypress E2E on host (Electron OK)
         run: |
           CYPRESS_baseUrl="http://localhost:5173" \
-          CYPRESS_KEYCLOAK_ORIGIN="http://localhost:8181" \
+          CYPRESS_KEYCLOAK_ORIGIN="http://localhost:8080" \
           npx cypress run --browser electron --config-file cypress.config.ts
 
       - name: Upload Cypress screenshots

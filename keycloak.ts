@@ -4,7 +4,7 @@ const isCypress =
   typeof window !== "undefined" && typeof window.Cypress !== "undefined";
 
 const E2E_KEYCLOAK = {
-  url: "http://localhost:8181",
+  url: "http://localhost:8080",
   realm: "collector-e2e",
   clientId: "collector-frontend",
 };

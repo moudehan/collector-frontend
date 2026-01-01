@@ -228,7 +228,7 @@ Cypress.on("uncaught:exception", (err) => {
 
 describe("Créer une boutique puis un article", () => {
   const KEYCLOAK_ORIGIN =
-    (Cypress.env("KEYCLOAK_ORIGIN") as string) || "http://localhost:8181";
+    (Cypress.env("KEYCLOAK_ORIGIN") as string) || "http://localhost:8080";
 
   const USERNAME = (Cypress.env("E2E_USER") as string) || "e2e";
   const PASSWORD = (Cypress.env("E2E_PASSWORD") as string) || "e2e";
