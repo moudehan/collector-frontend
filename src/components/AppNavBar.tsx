@@ -65,6 +65,8 @@ export default function AppNavbar() {
             ? "Nouvel article ajouté"
             : n.type === "ARTICLE_UPDATED"
             ? "Article mis à jour"
+            : n.type === "ARTICLE_REJECTED"
+            ? "Article rejeté"
             : "Notification",
         subtitle:
           n.type === "ARTICLE_UPDATED"
@@ -91,6 +93,8 @@ export default function AppNavbar() {
           title:
             raw.type === "ARTICLE_UPDATED"
               ? "Article mis à jour"
+              : raw.type === "ARTICLE_REJECTED"
+              ? "Article rejeté"
               : "Nouvel article ajouté",
           subtitle: raw.type === "ARTICLE_UPDATED" ? raw.message : raw.title,
           is_read: false,
@@ -192,7 +196,10 @@ export default function AppNavbar() {
                     setNotifAnchor(null);
 
                     requestAnimationFrame(() => {
-                      if (item.article_id) {
+                      if (!item.article_id) return;
+                      if (item.type === "ARTICLE_REJECTED") {
+                        navigate(`/article/${item.article_id}`);
+                      } else {
                         navigate(`/article/detail/${item.article_id}`);
                       }
                     });

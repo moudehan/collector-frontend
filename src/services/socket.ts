@@ -10,6 +10,7 @@ export interface LiveNotification {
   article_id: string;
   is_read: false;
   created_at: string;
+  reason: string | null;
 }
 
 export function useArticleNotifications(

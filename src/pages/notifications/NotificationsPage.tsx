@@ -85,7 +85,11 @@ export default function NotificationsPage() {
     }
 
     if (notif.payload?.article_id) {
-      navigate(`/article/detail/${notif.payload.article_id}`);
+      if (notif.type === "ARTICLE_REJECTED") {
+        navigate(`/article/${notif.payload.article_id}`);
+      } else {
+        navigate(`/article/detail/${notif.payload.article_id}`);
+      }
     }
   }
 
@@ -155,6 +159,8 @@ export default function NotificationsPage() {
                 <Typography fontWeight={800}>
                   {notif.type === "ARTICLE_UPDATED"
                     ? "Article mis à jour"
+                    : notif.type === "ARTICLE_REJECTED"
+                    ? "Article rejeté"
                     : "Nouvel article publié"}
                 </Typography>
 

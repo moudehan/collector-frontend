@@ -16,7 +16,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ImageIcon from "@mui/icons-material/Image";
 
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 
 import AnimatedButton from "../../components/Button";
 import type {
@@ -43,6 +43,9 @@ export default function ArticleEditModal({
 }: Props) {
   const [title, setTitle] = useState<string>(article.title);
   const [price, setPrice] = useState<number | string>(article.price);
+  const [shippingCost, setShippingCost] = useState<number | string>(
+    article.shipping_cost
+  );
   const [description, setDescription] = useState<string>(article.description);
 
   const [selectedCategory, setSelectedCategory] = useState<Category>(
@@ -70,7 +73,7 @@ export default function ArticleEditModal({
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  function handleAddImages(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleAddImages(e: ChangeEvent<HTMLInputElement>) {
     const files = e.target.files ? Array.from(e.target.files) : [];
     if (files.length === 0) return;
     setNewImages((prev) => [...prev, ...files]);
@@ -85,33 +88,26 @@ export default function ArticleEditModal({
   }
 
   function extractErrorMessage(err: unknown): string {
-    if (err instanceof Error && err.message) {
-      return err.message;
-    }
+    if (err instanceof Error && err.message) return err.message;
 
     if (typeof err === "object" && err !== null) {
-      const maybeWithResponse = err as {
-        response?: { data?: unknown };
-      };
-
+      const maybeWithResponse = err as { response?: { data?: unknown } };
       const data = maybeWithResponse.response?.data;
       if (data && typeof data === "object") {
         const typed = data as { message?: string | string[] };
-
         if (Array.isArray(typed.message) && typed.message.length > 0) {
           return String(typed.message[0]);
         }
-        if (typeof typed.message === "string") {
-          return typed.message;
-        }
+        if (typeof typed.message === "string") return typed.message;
       }
     }
-
     return "Erreur lors de la modification de l’article.";
   }
 
   async function handleSave() {
     setErrorMessage(null);
+
+    const shippingCostNumber = shippingCost === "" ? 0 : Number(shippingCost);
 
     const payload: UpdatedArticlePayload = {
       title,
@@ -122,6 +118,7 @@ export default function ArticleEditModal({
       oldImages: images,
       newImages,
       quantity: quantity === "" ? undefined : Number(quantity),
+      shipping_cost: shippingCostNumber,
       vintageEra: vintageEra.trim() || undefined,
       productionYear:
         productionYear === "" ? undefined : Number(productionYear),
@@ -266,6 +263,18 @@ export default function ArticleEditModal({
           value={price}
           onChange={(e) =>
             setPrice(e.target.value === "" ? "" : Number(e.target.value))
+          }
+        />
+
+        <TextField
+          fullWidth
+          label="Frais de port (€)"
+          type="number"
+          sx={{ mb: 2 }}
+          value={shippingCost}
+          inputProps={{ min: 0 }}
+          onChange={(e) =>
+            setShippingCost(e.target.value === "" ? "" : Number(e.target.value))
           }
         />
 

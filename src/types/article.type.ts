@@ -35,6 +35,9 @@ export interface Article {
   productionYear?: number | null;
   conditionLabel?: string | null;
   vintageNotes?: string | null;
+  moderation_reasons?: string[] | null;
+  rejection_reason?: string | null;
+  rejected_at?: string | null;
 }
 
 export type PriceHistoryItem = {
@@ -53,6 +56,7 @@ export interface UpdatedArticlePayload {
   oldImages: ArticleImage[];
   newImages: File[];
   quantity?: number;
+  shipping_cost: number | string;
   vintageEra?: string;
   productionYear?: number;
   conditionLabel?: string;

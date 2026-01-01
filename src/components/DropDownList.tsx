@@ -14,6 +14,7 @@ export type Item = {
   subtitle?: string;
   is_read: boolean;
   article_id: string;
+  type: string;
 };
 
 type Props = {

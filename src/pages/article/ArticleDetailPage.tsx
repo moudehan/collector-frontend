@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
+  Alert,
   Box,
   Card,
   Container,
@@ -133,6 +134,55 @@ export default function ArticleDetailPage() {
     loadCategories();
   }, []);
 
+  const normalizedStatus = useMemo(() => {
+    const raw = String(article?.status ?? "");
+    return raw.toUpperCase();
+  }, [article?.status]);
+
+  const isPending = normalizedStatus === "PENDING";
+  const isRejected = normalizedStatus === "REJECTED";
+
+  const cardStyle = useMemo(() => {
+    if (isPending) {
+      return {
+        backgroundColor: "#FFF6D1",
+        border: "1px solid #E8C979",
+      };
+    }
+    if (isRejected) {
+      return {
+        backgroundColor: "#FFE5E5",
+        border: "1px solid #F2A3A3",
+      };
+    }
+    return {
+      backgroundColor: "white",
+      border: "1px solid transparent",
+    };
+  }, [isPending, isRejected]);
+
+  const statusBadge = useMemo(() => {
+    if (isPending) {
+      return {
+        text: "En attente d’approbation",
+        bgcolor: "#FFD86B",
+        color: "#8A5A00",
+      };
+    }
+    if (isRejected) {
+      return {
+        text: "Article rejeté",
+        bgcolor: "#FFBDBD",
+        color: "#8A1F1F",
+      };
+    }
+    return {
+      text: "Article approuvé",
+      bgcolor: "#B7FFD1",
+      color: "#0F7A26",
+    };
+  }, [isPending, isRejected]);
+
   if (!article) return null;
 
   async function handleDeleteArticle() {
@@ -155,7 +205,10 @@ export default function ArticleDetailPage() {
     formData.append("title", payload.title);
     formData.append("description", payload.description);
     formData.append("price", String(payload.price));
-    formData.append("shipping_cost", String(article.shipping_cost ?? 0));
+    formData.append(
+      "shipping_cost",
+      String(payload.shipping_cost ?? article.shipping_cost ?? 0)
+    );
     formData.append("shopId", payload.shopId);
 
     if (payload.categoryId) {
@@ -212,12 +265,8 @@ export default function ArticleDetailPage() {
             p: 3,
             borderRadius: 3,
             boxShadow: "0 5px 20px rgba(0,0,0,0.1)",
-            backgroundColor: article.status === "pending" ? "#FFF6D1" : "white",
-            border:
-              article.status === "pending"
-                ? "1px solid #E8C979"
-                : "1px solid transparent",
             mb: 4,
+            ...cardStyle,
           }}
         >
           <Box sx={{ display: "flex", gap: 3 }}>
@@ -225,40 +274,51 @@ export default function ArticleDetailPage() {
 
             <Box sx={{ flex: 1 }}>
               <Box sx={{ mb: 1 }}>
-                {article.status === "pending" ? (
-                  <Box
-                    sx={{
-                      display: "inline-block",
-                      px: 2,
-                      py: 0.6,
-                      borderRadius: 2,
-                      bgcolor: "#FFD86B",
-                      color: "#8A5A00",
-                      fontWeight: 800,
-                      fontSize: 14,
-                    }}
-                  >
-                    ⏳ En attente d’approbation
-                  </Box>
-                ) : (
-                  <Box
-                    sx={{
-                      display: "inline-block",
-                      px: 2,
-                      py: 0.6,
-                      borderRadius: 2,
-                      bgcolor: "#B7FFD1",
-                      color: "#0F7A26",
-                      fontWeight: 800,
-                      fontSize: 14,
-                    }}
-                  >
-                    Article approuvé
-                  </Box>
-                )}
+                <Box
+                  sx={{
+                    display: "inline-block",
+                    px: 2,
+                    py: 0.6,
+                    borderRadius: 2,
+                    bgcolor: statusBadge.bgcolor,
+                    color: statusBadge.color,
+                    fontWeight: 800,
+                    fontSize: 14,
+                  }}
+                >
+                  {statusBadge.text}
+                </Box>
               </Box>
 
-              <Typography fontSize={32} fontWeight={900}>
+              {isRejected && (
+                <Alert severity="error" sx={{ mt: 1 }}>
+                  <b>Article rejeté.</b>
+                  <br />
+                  {article.rejection_reason
+                    ? `Raison : ${article.rejection_reason}`
+                    : "Raison non précisée."}
+                </Alert>
+              )}
+
+              {isPending && (
+                <Alert severity="warning" sx={{ mt: 1 }}>
+                  <b>En attente de validation.</b>
+                  {Array.isArray(article.moderation_reasons) &&
+                    article.moderation_reasons.length > 0 && (
+                      <>
+                        <br />
+                        Raisons :
+                        <ul style={{ marginTop: 6, marginBottom: 0 }}>
+                          {article.moderation_reasons.map((r, idx) => (
+                            <li key={idx}>{r}</li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                </Alert>
+              )}
+
+              <Typography fontSize={32} fontWeight={900} mt={2}>
                 {article.price} €
               </Typography>
 
@@ -311,7 +371,7 @@ export default function ArticleDetailPage() {
                   variant="outlined"
                   width="100%"
                   sx={{ border: 1 }}
-                  disabled={article.status === "pending"}
+                  disabled={isPending}
                   onClick={() => setOpenEdit(true)}
                 />
 
@@ -322,7 +382,7 @@ export default function ArticleDetailPage() {
                   color="red"
                   width="100%"
                   sx={{ border: 1 }}
-                  disabled={article.status === "pending"}
+                  disabled={isPending}
                   onClick={() => setOpenDeleteConfirm(true)}
                 />
               </Box>
