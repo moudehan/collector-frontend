@@ -7,6 +7,9 @@ export function getSocket(): Socket {
   if (!socket) {
     socket = io(VITE_SOCKET_URL, {
       transports: ["websocket", "polling"],
+      auth: {
+        token: localStorage.getItem("UserToken"),
+      },
     });
   }
   return socket;

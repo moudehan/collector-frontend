@@ -36,6 +36,52 @@ import { useConversationUnread } from "../contexte/ConversationUnreadContext";
 import { useAuth } from "../contexte/UseAuth";
 import { useArticleNotifications } from "../services/socket";
 
+function getNotifTitle(type: string): string {
+  switch (type) {
+    case "NEW_ARTICLE":
+      return "Nouvel article ajouté";
+    case "ARTICLE_UPDATED":
+      return "Article mis à jour";
+    case "ARTICLE_REJECTED":
+      return "Article rejeté";
+    case "ARTICLE_APPROUVED":
+      return "Article approuvé";
+    default:
+      return "Notification";
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getNotifSubtitle(type: string, payloadOrRaw: any): string {
+  switch (type) {
+    case "ARTICLE_UPDATED":
+      return (
+        payloadOrRaw?.message ?? payloadOrRaw?.title ?? "Article mis à jour"
+      );
+
+    case "ARTICLE_REJECTED":
+      return (
+        payloadOrRaw?.reason ??
+        payloadOrRaw?.message ??
+        payloadOrRaw?.title ??
+        "Votre article a été rejeté"
+      );
+
+    case "ARTICLE_APPROUVED":
+      return (
+        payloadOrRaw?.message ?? "Votre article a été approuvé automatiquement"
+      );
+
+    case "NEW_ARTICLE":
+      return payloadOrRaw?.title ?? payloadOrRaw?.message ?? "Nouvel article";
+
+    default:
+      return (
+        payloadOrRaw?.title ?? payloadOrRaw?.message ?? "Nouvelle notification"
+      );
+  }
+}
+
 export default function AppNavbar() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
@@ -60,18 +106,8 @@ export default function AppNavbar() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const formatted: Item[] = data.map((n: any) => ({
         id: n.id,
-        title:
-          n.type === "NEW_ARTICLE"
-            ? "Nouvel article ajouté"
-            : n.type === "ARTICLE_UPDATED"
-            ? "Article mis à jour"
-            : n.type === "ARTICLE_REJECTED"
-            ? "Article rejeté"
-            : "Notification",
-        subtitle:
-          n.type === "ARTICLE_UPDATED"
-            ? n.payload?.message
-            : n.payload?.title ?? n.payload?.message ?? "Nouvelle notification",
+        title: getNotifTitle(n.type),
+        subtitle: getNotifSubtitle(n.type, n.payload),
         is_read: n.is_read,
         article_id: n.payload?.article_id,
         type: n.type,
@@ -90,13 +126,8 @@ export default function AppNavbar() {
       return [
         {
           id: raw.id,
-          title:
-            raw.type === "ARTICLE_UPDATED"
-              ? "Article mis à jour"
-              : raw.type === "ARTICLE_REJECTED"
-              ? "Article rejeté"
-              : "Nouvel article ajouté",
-          subtitle: raw.type === "ARTICLE_UPDATED" ? raw.message : raw.title,
+          title: getNotifTitle(raw.type),
+          subtitle: getNotifSubtitle(raw.type, raw),
           is_read: false,
           article_id: raw.article_id,
           type: raw.type,
@@ -197,7 +228,10 @@ export default function AppNavbar() {
 
                     requestAnimationFrame(() => {
                       if (!item.article_id) return;
-                      if (item.type === "ARTICLE_REJECTED") {
+                      if (
+                        item.type === "ARTICLE_REJECTED" ||
+                        item.type === "ARTICLE_APPROUVED"
+                      ) {
                         navigate(`/article/${item.article_id}`);
                       } else {
                         navigate(`/article/detail/${item.article_id}`);

@@ -8,6 +8,7 @@ import {
   DialogTitle,
   Switch,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 
@@ -44,6 +45,8 @@ export default function ProfilePage() {
   const [notifSettings, setNotifSettings] = useState<NotificationSettings>({
     NEW_ARTICLE: true,
     ARTICLE_UPDATED: true,
+    ARTICLE_REJECTED: true,
+    ARTICLE_APPROUVED: true,
     MAIL_ENABLED: true,
   });
 
@@ -97,13 +100,15 @@ export default function ProfilePage() {
           <Typography fontSize={28} fontWeight={900}>
             Mon Profil
           </Typography>
-
-          <AnimatedButton
-            label="Modifier"
-            variant="text"
-            startIcon={<EditIcon />}
-            onClick={() => setOpenEdit(true)}
-          />
+          <Tooltip title="n'est pas encore implementé via keycloak">
+            <AnimatedButton
+              label="Modifier"
+              variant="text"
+              startIcon={<EditIcon />}
+              onClick={() => setOpenEdit(true)}
+              disabled
+            />
+          </Tooltip>
         </Box>
 
         <Card sx={{ p: 4, borderRadius: 3 }}>
@@ -219,6 +224,34 @@ export default function ProfilePage() {
             <Switch
               checked={notifSettings.ARTICLE_UPDATED}
               onChange={() => toggleNotif("ARTICLE_UPDATED")}
+            />
+          </Box>
+
+          <Box display="flex" justifyContent="space-between" mb={2} px={4}>
+            <Box>
+              <Typography fontWeight={700}>Article rejeté</Typography>
+              <Typography fontSize={13} color="gray">
+                Être notifié quand un de vos articles est rejeté
+              </Typography>
+            </Box>
+
+            <Switch
+              checked={notifSettings.ARTICLE_REJECTED ?? true}
+              onChange={() => toggleNotif("ARTICLE_REJECTED")}
+            />
+          </Box>
+
+          <Box display="flex" justifyContent="space-between" mb={2} px={4}>
+            <Box>
+              <Typography fontWeight={700}>Article approuvé</Typography>
+              <Typography fontSize={13} color="gray">
+                Être notifié quand votre article est approuvé automatiquement
+              </Typography>
+            </Box>
+
+            <Switch
+              checked={notifSettings.ARTICLE_APPROUVED ?? true}
+              onChange={() => toggleNotif("ARTICLE_APPROUVED")}
             />
           </Box>
 

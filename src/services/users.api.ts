@@ -37,7 +37,7 @@ export async function updateMe(payload: {
     throw new Error("Utilisateur non authentifié");
   }
 
-  const res = await fetch(`${API_URL}/auth/me`, {
+  const res = await fetch(`${API_URL}/users/me`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,

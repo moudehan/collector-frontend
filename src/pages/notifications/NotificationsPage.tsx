@@ -30,8 +30,51 @@ type NotificationItem = {
     article_id?: string;
     title?: string;
     message?: string;
+    reason?: string;
   };
 };
+
+function getNotifTitle(type: string): string {
+  switch (type) {
+    case "NEW_ARTICLE":
+      return "Nouvel article ajouté";
+    case "ARTICLE_UPDATED":
+      return "Article mis à jour";
+    case "ARTICLE_REJECTED":
+      return "Article rejeté";
+    case "ARTICLE_APPROUVED":
+      return "Article approuvé";
+    default:
+      return "Notification";
+  }
+}
+
+function getNotifSubtitle(
+  type: string,
+  payload?: NotificationItem["payload"]
+): string {
+  switch (type) {
+    case "ARTICLE_UPDATED":
+      return payload?.message ?? payload?.title ?? "Article mis à jour";
+
+    case "ARTICLE_REJECTED":
+      return (
+        payload?.reason ??
+        payload?.message ??
+        payload?.title ??
+        "Votre article a été rejeté"
+      );
+
+    case "ARTICLE_APPROUVED":
+      return payload?.message ?? "Votre article a été approuvé automatiquement";
+
+    case "NEW_ARTICLE":
+      return payload?.title ?? payload?.message ?? "Nouvel article";
+
+    default:
+      return payload?.title ?? payload?.message ?? "Nouvelle notification";
+  }
+}
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
@@ -85,7 +128,10 @@ export default function NotificationsPage() {
     }
 
     if (notif.payload?.article_id) {
-      if (notif.type === "ARTICLE_REJECTED") {
+      if (
+        notif.type === "ARTICLE_REJECTED" ||
+        notif.type === "ARTICLE_APPROUVED"
+      ) {
         navigate(`/article/${notif.payload.article_id}`);
       } else {
         navigate(`/article/detail/${notif.payload.article_id}`);
@@ -157,17 +203,11 @@ export default function NotificationsPage() {
 
               <Box flex={1}>
                 <Typography fontWeight={800}>
-                  {notif.type === "ARTICLE_UPDATED"
-                    ? "Article mis à jour"
-                    : notif.type === "ARTICLE_REJECTED"
-                    ? "Article rejeté"
-                    : "Nouvel article publié"}
+                  {getNotifTitle(notif.type)}
                 </Typography>
 
                 <Typography color="gray" fontSize={14}>
-                  {notif.payload?.title ||
-                    notif.payload?.message ||
-                    "Nouvelle notification"}
+                  {getNotifSubtitle(notif.type, notif.payload)}
                 </Typography>
               </Box>
 

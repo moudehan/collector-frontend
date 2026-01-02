@@ -83,6 +83,9 @@ export default function ConversationPage() {
   useEffect(() => {
     socketRef.current = io(VITE_SOCKET_URL, {
       transports: ["websocket"],
+      auth: {
+        token: localStorage.getItem("UserToken"),
+      },
     });
     socketRef.current.on("connect", () => {});
 

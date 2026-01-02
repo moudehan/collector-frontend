@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
@@ -22,6 +22,10 @@ import UserPageLayout from "../../layout/UserPageLayout";
 import { createArticle } from "../../services/articles.api";
 import { fetchPublicCategories } from "../../services/categories.api";
 import type { Category } from "../../types/article.type";
+import {
+  DEFAULT_ARTICLE_RULES,
+  validateArticleDraft,
+} from "../../utils/articleValidation";
 
 export default function ArticleAddPage() {
   const { shopId } = useParams();
@@ -54,7 +58,7 @@ export default function ArticleAddPage() {
       });
   }, []);
 
-  function handleSelectImages(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleSelectImages(e: ChangeEvent<HTMLInputElement>) {
     const newFiles = e.target.files ? Array.from(e.target.files) : [];
     if (newFiles.length === 0) return;
 
@@ -64,15 +68,17 @@ export default function ArticleAddPage() {
     );
     const total = images.length + deduped.length;
 
-    if (total > 10) {
-      setErrorMessage("Vous pouvez ajouter maximum 10 images.");
+    if (total > DEFAULT_ARTICLE_RULES.MAX_IMAGES) {
+      setErrorMessage(
+        `Vous pouvez ajouter maximum ${DEFAULT_ARTICLE_RULES.MAX_IMAGES} images.`
+      );
       return;
     }
 
-    const updatedFiles = [...images, ...newFiles];
+    const updatedFiles = [...images, ...deduped];
     setImages(updatedFiles);
 
-    const newPreviews = newFiles.map((f) => URL.createObjectURL(f));
+    const newPreviews = deduped.map((f) => URL.createObjectURL(f));
     setPreviewImages((prev) => [...prev, ...newPreviews]);
   }
 
@@ -84,22 +90,41 @@ export default function ArticleAddPage() {
   async function handleSubmit() {
     setErrorMessage("");
 
-    if (!title || !price || !selectedCategory || images.length === 0) {
-      setErrorMessage("Merci de remplir tous les champs obligatoires.");
-      return;
-    }
-
     if (!shopId) {
       setErrorMessage("Impossible d'associer l’article à une boutique.");
       return;
     }
 
+    const errors = validateArticleDraft(
+      {
+        title,
+        description,
+        price,
+        shippingCost,
+        quantity,
+        imagesCount: images.length,
+        categoryId: selectedCategory?.id ?? null,
+        productionYear,
+      },
+      DEFAULT_ARTICLE_RULES
+    );
+
+    if (errors.length > 0) {
+      setErrorMessage(errors.join("\n"));
+      return;
+    }
+
     const formData = new FormData();
-    formData.append("title", title);
+    formData.append("title", title.trim());
     formData.append("price", String(price));
-    formData.append("description", description);
-    formData.append("shipping_cost", String(shippingCost || 0));
-    formData.append("categoryId", selectedCategory.id);
+    formData.append("description", description.trim());
+
+    formData.append(
+      "shipping_cost",
+      String(shippingCost === "" ? 0 : shippingCost)
+    );
+
+    formData.append("categoryId", selectedCategory!.id);
     formData.append("shopId", shopId);
 
     if (quantity !== "") {
@@ -233,7 +258,9 @@ export default function ArticleAddPage() {
             type="number"
             sx={{ mb: 2 }}
             value={price}
-            onChange={(e) => setPrice(Number(e.target.value))}
+            onChange={(e) =>
+              setPrice(e.target.value === "" ? "" : Number(e.target.value))
+            }
           />
 
           <TextField
@@ -242,7 +269,12 @@ export default function ArticleAddPage() {
             type="number"
             sx={{ mb: 2 }}
             value={shippingCost}
-            onChange={(e) => setShippingCost(Number(e.target.value))}
+            inputProps={{ min: 0 }}
+            onChange={(e) =>
+              setShippingCost(
+                e.target.value === "" ? "" : Number(e.target.value)
+              )
+            }
           />
 
           <TextField
@@ -321,7 +353,7 @@ export default function ArticleAddPage() {
             <Typography
               color="red"
               fontSize={14}
-              sx={{ mb: 2, textAlign: "center" }}
+              sx={{ mb: 2, textAlign: "center", whiteSpace: "pre-line" }}
             >
               {errorMessage}
             </Typography>

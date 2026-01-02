@@ -3,6 +3,8 @@ export type NotificationSettings = {
   NEW_ARTICLE: boolean;
   ARTICLE_UPDATED: boolean;
   MAIL_ENABLED: boolean;
+  ARTICLE_REJECTED: boolean;
+  ARTICLE_APPROUVED: boolean;
 };
 const API_URL = import.meta.env.VITE_API_URL;
 

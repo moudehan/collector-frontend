@@ -26,6 +26,11 @@ import type {
   UpdatedArticlePayload,
 } from "../../types/article.type";
 
+import {
+  DEFAULT_ARTICLE_RULES,
+  validateArticleDraft,
+} from "../../utils/articleValidation";
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -76,6 +81,17 @@ export default function ArticleEditModal({
   function handleAddImages(e: ChangeEvent<HTMLInputElement>) {
     const files = e.target.files ? Array.from(e.target.files) : [];
     if (files.length === 0) return;
+
+    const totalAfter =
+      (images?.length ?? 0) + (newImages?.length ?? 0) + files.length;
+
+    if (totalAfter > DEFAULT_ARTICLE_RULES.MAX_IMAGES) {
+      setErrorMessage(
+        `Vous pouvez ajouter maximum ${DEFAULT_ARTICLE_RULES.MAX_IMAGES} images.`
+      );
+      return;
+    }
+
     setNewImages((prev) => [...prev, ...files]);
   }
 
@@ -106,6 +122,45 @@ export default function ArticleEditModal({
 
   async function handleSave() {
     setErrorMessage(null);
+
+    const errors = validateArticleDraft(
+      {
+        title,
+        description,
+        price:
+          typeof price === "string"
+            ? price === ""
+              ? ""
+              : Number(price)
+            : price,
+        shippingCost:
+          typeof shippingCost === "string"
+            ? shippingCost === ""
+              ? ""
+              : Number(shippingCost)
+            : shippingCost,
+        quantity:
+          typeof quantity === "string"
+            ? quantity === ""
+              ? ""
+              : Number(quantity)
+            : quantity,
+        imagesCount: (images?.length ?? 0) + (newImages?.length ?? 0),
+        categoryId: selectedCategory?.id ?? null,
+        productionYear:
+          typeof productionYear === "string"
+            ? productionYear === ""
+              ? ""
+              : Number(productionYear)
+            : productionYear,
+      },
+      DEFAULT_ARTICLE_RULES
+    );
+
+    if (errors.length > 0) {
+      setErrorMessage(errors.join("\n"));
+      return;
+    }
 
     const shippingCostNumber = shippingCost === "" ? 0 : Number(shippingCost);
 
@@ -348,7 +403,7 @@ export default function ArticleEditModal({
         />
 
         {errorMessage && (
-          <Typography color="error" sx={{ mt: 2 }}>
+          <Typography color="error" sx={{ mt: 2, whiteSpace: "pre-line" }}>
             {errorMessage}
           </Typography>
         )}
