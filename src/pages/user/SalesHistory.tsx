@@ -175,7 +175,7 @@ export default function SalesHistory() {
   }
 
   function handleViewArticle(sale: SaleItem) {
-    navigate(`/articles/${sale.articleId}`);
+    navigate(`/article/${sale.articleId}`);
   }
 
   function handleContactBuyer(sale: SaleItem) {
